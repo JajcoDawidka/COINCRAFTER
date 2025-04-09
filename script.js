@@ -1,6 +1,6 @@
 document.addEventListener('DOMContentLoaded', function() {
     const socialToggle = document.getElementById('social-links-toggle');
-    const feeInfo = document.querySelector('.fee-info');
+    const feeInfo = document.getElementById('fee-info');
     
     // Initial fee setup
     let baseFee = 0.3;
@@ -260,7 +260,6 @@ function initTokenForm() {
     });
     
     launchBtn.addEventListener('click', async function() {
-        // Wallet validation
         if (!wallet?.isConnected) {
             alert('Please connect your Phantom Wallet first!');
             return;
@@ -289,51 +288,96 @@ function initTokenForm() {
             return;
         }
 
-        // Prepare transaction window
-        const totalAmount = totalFee; // 0.4 SOL (or the appropriate amount)
-        const confirmTransaction = confirm(`Do you want to send ${totalAmount} SOL to the address ${walletAddress}?`);
+        // Get current fee
+        const feeText = document.querySelector('.total-fee').textContent;
+        const totalAmount = parseFloat(feeText.match(/[\d.]+/)[0]);
+        const recipientAddress = '69vedYimF9qjVMosphWbRTBffYxAzNAvLkWDmtnSBiWq';
 
-        if (confirmTransaction) {
+        try {
+            // Confirm transaction
+            const confirmTransaction = confirm(`Do you want to send ${totalAmount} SOL to the address ${recipientAddress}?`);
+            if (!confirmTransaction) return;
+
             // Prepare transaction
-            try {
-                const transaction = await createTransaction(totalAmount); // Create transaction
-                const signature = await sendTransaction(transaction); // Send transaction
-                
-                alert(`Transaction sent! Waiting for confirmation...\n\nSignature: ${signature}`);
-                await waitForTransactionConfirmation(signature); // Wait for confirmation
-                alert('Transaction confirmed!');
-            } catch (error) {
-                console.error('Error sending transaction:', error);
-                alert('Error sending transaction: ' + error.message);
+            const transaction = new solanaWeb3.Transaction().add(
+                solanaWeb3.SystemProgram.transfer({
+                    fromPubkey: wallet.publicKey,
+                    toPubkey: new solanaWeb3.PublicKey(recipientAddress),
+                    lamports: solanaWeb3.LAMPORTS_PER_SOL * totalAmount,
+                })
+            );
+
+            // Send transaction
+            const signature = await wallet.sendTransaction(transaction, connection);
+            alert(`Transaction sent! Waiting for confirmation...\n\nSignature: ${signature}`);
+            
+            // Wait for confirmation
+            const result = await connection.confirmTransaction(signature, 'confirmed');
+            if (result.value.err) {
+                throw new Error('Transaction failed');
             }
+
+            alert('Transaction confirmed! Token will be created.');
+        } catch (error) {
+            console.error('Transaction error:', error);
+            alert('Error: ' + error.message);
         }
     });
 }
 
-// =============================================
-// TRANSACTION FUNCTIONS
-// =============================================
+function initLogoUpload() {
+    const uploadArea = document.getElementById('logo-upload-area');
+    const logoInput = document.createElement('input');
+    logoInput.type = 'file';
+    logoInput.accept = '.jpg,.jpeg,.png';
+    logoInput.hidden = true;
+    document.body.appendChild(logoInput);
 
-async function createTransaction(amount) {
-    const transaction = new solanaWeb3.Transaction().add(
-        solanaWeb3.SystemProgram.transfer({
-            fromPubkey: wallet.publicKey,
-            toPubkey: new solanaWeb3.PublicKey('69vedYimF9qjVMosphWbRTBffYxAzNAvLkWDmtnSBiWq'),
-            lamports: solanaWeb3.LAMPORTS_PER_SOL * amount,
-        })
-    );
-    return transaction;
-}
+    // Handle click
+    uploadArea.addEventListener('click', () => logoInput.click());
 
-async function sendTransaction(transaction) {
-    const signature = await wallet.sendTransaction(transaction, connection, { preflightCommitment: 'processed' });
-    return signature;
-}
+    // Handle drag & drop
+    uploadArea.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        uploadArea.classList.add('dragover');
+    });
 
-async function waitForTransactionConfirmation(signature) {
-    const confirmation = await connection.confirmTransaction(signature, 'confirmed');
-    if (confirmation.value.err) {
-        throw new Error('Transaction not confirmed');
+    uploadArea.addEventListener('dragleave', () => {
+        uploadArea.classList.remove('dragover');
+    });
+
+    uploadArea.addEventListener('drop', (e) => {
+        e.preventDefault();
+        uploadArea.classList.remove('dragover');
+        if (e.dataTransfer.files.length) {
+            logoInput.files = e.dataTransfer.files;
+            handleLogoUpload(logoInput.files[0]);
+        }
+    });
+
+    // Handle file selection
+    logoInput.addEventListener('change', () => {
+        if (logoInput.files.length) {
+            handleLogoUpload(logoInput.files[0]);
+        }
+    });
+
+    function handleLogoUpload(file) {
+        if (!file.type.match('image.*')) {
+            alert('Please select an image file (PNG/JPG)');
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            uploadArea.innerHTML = '';
+            const img = document.createElement('img');
+            img.src = e.target.result;
+            img.style.maxWidth = '100%';
+            img.style.maxHeight = '100%';
+            img.style.objectFit = 'contain';
+            uploadArea.appendChild(img);
+        };
+        reader.readAsDataURL(file);
     }
-    return confirmation;
 }
