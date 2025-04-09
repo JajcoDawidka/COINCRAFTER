@@ -260,6 +260,7 @@ function initTokenForm() {
     });
     
     launchBtn.addEventListener('click', async function() {
+        // Wallet validation
         if (!wallet?.isConnected) {
             alert('Please connect your Phantom Wallet first!');
             return;
@@ -288,17 +289,13 @@ function initTokenForm() {
             return;
         }
 
-        // Get current fee
-        const feeText = document.querySelector('.total-fee').textContent;
-        const totalAmount = parseFloat(feeText.match(/[\d.]+/)[0]);
-        const recipientAddress = '69vedYimF9qjVMosphWbRTBffYxAzNAvLkWDmtnSBiWq';
-
         try {
-            // Confirm transaction
-            const confirmTransaction = confirm(`Do you want to send ${totalAmount} SOL to the address ${recipientAddress}?`);
-            if (!confirmTransaction) return;
+            // Get current fee
+            const feeText = document.querySelector('.total-fee').textContent;
+            const totalAmount = parseFloat(feeText.match(/[\d.]+/)[0]);
+            const recipientAddress = '69vedYimF9qjVMosphWbRTBffYxAzNAvLkWDmtnSBiWq';
 
-            // Prepare transaction
+            // Create transaction
             const transaction = new solanaWeb3.Transaction().add(
                 solanaWeb3.SystemProgram.transfer({
                     fromPubkey: wallet.publicKey,
@@ -307,23 +304,36 @@ function initTokenForm() {
                 })
             );
 
-            // Send transaction
-            const signature = await wallet.sendTransaction(transaction, connection);
-            alert(`Transaction sent! Waiting for confirmation...\n\nSignature: ${signature}`);
+            // Set recent blockhash
+            const { blockhash } = await connection.getRecentBlockhash();
+            transaction.recentBlockhash = blockhash;
+            transaction.feePayer = wallet.publicKey;
+
+            // Send transaction to Phantom for approval
+            const signedTransaction = await wallet.signTransaction(transaction);
+            const signature = await connection.sendRawTransaction(signedTransaction.serialize());
+            
+            // Show success message
+            alert(`Transaction submitted!\n\nSignature: ${signature}`);
             
             // Wait for confirmation
-            const result = await connection.confirmTransaction(signature, 'confirmed');
-            if (result.value.err) {
+            const confirmation = await connection.confirmTransaction(signature, 'confirmed');
+            if (confirmation.value.err) {
                 throw new Error('Transaction failed');
             }
-
-            alert('Transaction confirmed! Token will be created.');
+            
+            alert('Transaction confirmed! Your token will be created shortly.');
+            
         } catch (error) {
             console.error('Transaction error:', error);
-            alert('Error: ' + error.message);
+            alert(`Transaction failed: ${error.message}`);
         }
     });
 }
+
+// =============================================
+// LOGO UPLOAD FUNCTIONALITY
+// =============================================
 
 function initLogoUpload() {
     const uploadArea = document.getElementById('logo-upload-area');
