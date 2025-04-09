@@ -7,7 +7,7 @@
     <link rel="icon" href="logo.png" type="logo">
     <link rel="stylesheet" href="style.css">
     <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.min.js"></script>
-<script src="https://unpkg.com/@solana/wallet-adapter-phantom@latest/lib/index.iife.min.js"></script>
+    <script src="https://unpkg.com/@solana/wallet-adapter-phantom@latest/lib/index.iife.min.js"></script>
 </head>
 <body>
     <header>
@@ -19,8 +19,13 @@
                 <ul>
                     <li><a href="#home" class="nav-link">Home</a></li>
                     <li><a href="#create-token" class="nav-link active">Create Token</a></li>
-                    <li><a href="#liquidity-pool" class="nav-link">Liquidity Pool</a></li>
-                    <li><a href="#manage-liquidity" class="nav-link">Manage Liquidity</a></li>
+                    <li>
+                        <a href="https://raydium.io/liquidity/create-pool/" target="_blank" class="nav-link">Liquidity Pool</a>
+                      </li>
+                      <li>
+                        <a href="https://raydium.io/portfolio/?position_tab=standard" target="_blank" class="nav-link">Manage Liquidity</a>
+                      </li>
+                      
                 </ul>
             </div>
         </nav>
@@ -79,7 +84,7 @@
                             </select>
                         </div>
                         
-                        <div class="form-group">
+                        <div class="form-group logo-section">
                             <label>Logo *</label>
                             <div class="logo-upload">
                                 <div class="upload-area" id="logo-upload-area">
@@ -94,10 +99,10 @@
                                     <span class="coming-soon">COMING SOON</span>
                                 </button>
                             </div>
-                            <div class="form-hint">Add logo for your token or use AI to Generate one for you!</div>
+                            <div class="form-hint">Add logo for your token</div>
                         </div>
                         
-                        <div class="form-group">
+                        <div class="form-group description-section">
                             <label for="token-description">Description *</label>
                             <textarea id="token-description" rows="3" placeholder="Here you can describe your token"></textarea>
                         </div>
@@ -106,49 +111,76 @@
                     <div class="form-column">
                         <div class="form-group">
                             <label for="token-symbol">Token Symbol *</label>
-                            <input type="text" id="token-symbol" placeholder="Ex: SOL">
+                            <input type="text" id="token-symbol" placeholder="Ex: TCOIN">
                         </div>
                         
                         <div class="form-group">
                             <label for="token-supply">Supply *</label>
-                            <input type="number" id="token-supply" value="1000000">
+                            <input type="number" id="token-supply" value="1000000000">
                             <div class="form-hint">The initial number of available tokens that will be created in your wallet</div>
                         </div>
                         
-                        <div class="creator-info">
-                            <h3>Creator's Info (Optional)</h3>
-                            <p>Change the information of the creator in the metadata. By default, it is Luna Launch.</p>
-                            <label class="checkbox-label">
-                                <input type="checkbox">
-                                <span>Add Social Links & Tags</span>
+                        <div class="social-section">
+                            <h3>Social Media Links</h3>
+                            <p>Add social media links to your token</p>
+                            
+                            <label class="social-toggle">
+                                <input type="checkbox" id="social-links-toggle" class="hidden-checkbox">
+                                <div class="social-toggle-container">
+                                    <div class="custom-checkbox"></div>
+                                    <span class="social-toggle-text">Add Social Links</span>
+                                    <span class="sol-cost">+0.1 SOL</span>
+                                </div>
                             </label>
-                            <div class="form-hint">Add links to your token metadata</div>
+                            
+                            <div class="social-fields" id="social-fields">
+                                <div class="social-field-group">
+                                    <label for="telegram-link">Telegram Link *</label>
+                                    <input type="text" id="telegram-link" placeholder="Ex: https://t.me/lunalau.nch">
+                                    <div class="form-hint">Example: https://t.me/yourchannel</div>
+                                </div>
+                                
+                                <div class="social-field-group">
+                                    <label for="twitter-link">Twitter/X Link *</label>
+                                    <input type="text" id="twitter-link" placeholder="Ex: https://x.com/@lunalau.nch">
+                                    <div class="form-hint">Example: https://x.com/yourusername</div>
+                                </div>
+                                
+                                <div class="social-field-group">
+                                    <label for="website-link">Website Link</label>
+                                    <input type="text" id="website-link" placeholder="Ex: https://yourwebsite.com">
+                                    <div class="form-hint">Example: https://yourproject.com</div>
+                                </div>
+                            </div>
                         </div>
                         
                         <div class="revoke-authorities">
                             <h3>Revoke Authorities (Investor's Booster)</h3>
                             <p>Solana Token has 3 authorities: Freeze Authority, Mint Authority, and Update Authority. Revoke them to attract more investors.</p>
                             
-                            <label class="checkbox-label">
-                                <input type="checkbox">
-                                <span>Revoke Freeze</span>
-                                <span class="sql-cost">+0.1 SQL</span>
-                            </label>
-                            <div class="form-hint">No one will be able to freeze holders' token accounts anymore</div>
+                            <div class="revoke-option">
+                                <input type="checkbox" id="revoke-freeze" checked disabled class="hidden-checkbox">
+                                <div class="revoke-checkbox"></div>
+                                <label for="revoke-freeze" class="revoke-label">Revoke Freeze</label>
+                                <span class="revoke-cost">+0.1 SOL</span>
+                            </div>
+                            <div class="revoke-hint">No one will be able to freeze holders' token accounts anymore</div>
                             
-                            <label class="checkbox-label">
-                                <input type="checkbox">
-                                <span>Revoke Mint</span>
-                                <span class="sql-cost">+0.1 SQL</span>
-                            </label>
-                            <div class="form-hint">No one will be able to create more tokens anymore</div>
+                            <div class="revoke-option">
+                                <input type="checkbox" id="revoke-mint" checked disabled class="hidden-checkbox">
+                                <div class="revoke-checkbox"></div>
+                                <label for="revoke-mint" class="revoke-label">Revoke Mint</label>
+                                <span class="revoke-cost">+0.1 SOL</span>
+                            </div>
+                            <div class="revoke-hint">No one will be able to create more tokens anymore</div>
                             
-                            <label class="checkbox-label">
-                                <input type="checkbox">
-                                <span>Revoke Update</span>
-                                <span class="sql-cost">+0.1 SQL</span>
-                            </label>
-                            <div class="form-hint">No one will be able to modify token metadata anymore</div>
+                            <div class="revoke-option">
+                                <input type="checkbox" id="revoke-update" checked disabled class="hidden-checkbox">
+                                <div class="revoke-checkbox"></div>
+                                <label for="revoke-update" class="revoke-label">Revoke Update</label>
+                                <span class="revoke-cost">+0.1 SOL</span>
+                            </div>
+                            <div class="revoke-hint">No one will be able to modify token metadata anymore</div>
                         </div>
                     </div>
                 </div>
@@ -158,8 +190,7 @@
                         Launch Token
                     </button>
                     <div class="fee-info">
-                        <p>Total Fees: <span>0.6 SQL</span></p>
-                        <p class="small">(0.3 SQL base fee + additional options)</p>
+                        <!-- Tu będzie dynamicznie wstawiana informacja o opłatach -->
                     </div>
                 </div>
             </div>
