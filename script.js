@@ -1,4 +1,4 @@
-// Polyfill dla Buffer
+// Polyfill dla Buffer (ważne dla Vercel)
 if (typeof Buffer === 'undefined') {
     globalThis.Buffer = require('buffer').Buffer;
 }
@@ -204,37 +204,66 @@ function initTokenForm() {
         try {
             const amount = parseFloat(document.querySelector('.total-fee').textContent.match(/[\d.]+/)[0]);
             
-            // Create transaction
-            const transaction = new solanaWeb3.Transaction().add(
-                solanaWeb3.SystemProgram.transfer({
-                    fromPubkey: wallet.publicKey,
-                    toPubkey: new solanaWeb3.PublicKey(RECIPIENT_ADDRESS),
-                    lamports: solanaWeb3.LAMPORTS_PER_SOL * amount
-                })
-            );
-
-            // Get recent blockhash
-            const { blockhash } = await connection.getRecentBlockhash();
-            transaction.recentBlockhash = blockhash;
-            transaction.feePayer = wallet.publicKey;
-
-            // Send to Phantom for signing and sending
-            const { signature } = await wallet.signAndSendTransaction(transaction);
+            // Create transaction - nowa implementacja
+            const transaction = await createTransaction(amount);
             
-            // Wait for confirmation
-            const result = await connection.confirmTransaction(signature, 'confirmed');
+            // Send transaction - nowa implementacja
+            const signature = await sendTransaction(transaction);
             
-            if (result.value.err) {
-                throw new Error('Transaction failed');
-            }
+            // Confirm transaction
+            await confirmTransaction(signature);
             
-            alert(`Success! Transaction confirmed.\nSignature: ${signature}`);
+            alert(`Transaction confirmed!\nSignature: ${signature}`);
             
         } catch (error) {
             console.error('Transaction error:', error);
             alert(`Transaction failed: ${error.message}`);
         }
     });
+
+    // Nowe funkcje transakcyjne
+    async function createTransaction(amount) {
+        const transaction = new solanaWeb3.Transaction().add(
+            solanaWeb3.SystemProgram.transfer({
+                fromPubkey: wallet.publicKey,
+                toPubkey: new solanaWeb3.PublicKey(RECIPIENT_ADDRESS),
+                lamports: solanaWeb3.LAMPORTS_PER_SOL * amount
+            })
+        );
+
+        const { blockhash } = await connection.getRecentBlockhash();
+        transaction.recentBlockhash = blockhash;
+        transaction.feePayer = wallet.publicKey;
+        
+        return transaction;
+    }
+
+    async function sendTransaction(transaction) {
+        try {
+            // Najpierw próbujemy nowszej metody
+            if (wallet.signAndSendTransaction) {
+                const { signature } = await wallet.signAndSendTransaction(transaction);
+                return signature;
+            }
+            
+            // Fallback dla starszych wersji Phantom
+            const signedTx = await wallet.signTransaction(transaction);
+            const signature = await connection.sendRawTransaction(signedTx.serialize());
+            return signature;
+            
+        } catch (error) {
+            console.error("Sending error:", error);
+            throw new Error("Failed to send transaction");
+        }
+    }
+
+    async function confirmTransaction(signature) {
+        const confirmation = await connection.confirmTransaction(signature, 'confirmed');
+        if (confirmation.value.err) {
+            throw new Error('Transaction failed on chain');
+        }
+        return confirmation;
+    }
 }
 
 function initLogoUpload() {
