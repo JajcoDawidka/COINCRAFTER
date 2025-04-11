@@ -372,16 +372,10 @@ function initLogoUpload() {
 
     function resetUploadArea() {
         uploadArea.innerHTML = `
-            <svg class="upload-icon" viewBox="0 0 24 24">
-                <path d="M19 13v6a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-6M15 8l-4-4-4 4m4-4v13" 
-                      stroke="currentColor" 
-                      stroke-width="2" 
-                      fill="none" 
-                      stroke-linecap="round" 
-                      stroke-linejoin="round"/>
+            <svg class="upload-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path fill-rule="evenodd" clip-rule="evenodd" d="M12 0C5.372 0 0 5.372 0 12s5.372 12 12 12 12-5.372 12-12S18.628 0 12 0zm1 17.414V12h3.414L12 8.586 7.586 12H11v5.414L6.707 14.707a1 1 0 0 1 0-1.414l5.586-5.586a1 1 0 0 1 1.414 0l5.586 5.586a1 1 0 0 1 0 1.414l-5.586 5.586z" fill="#000"/>
             </svg>
-            <p>Drag and drop here to upload</p>
-            <p class="file-requirements">.png .jpg 1000x1000 px</p>
+            <span>Upload a logo</span>
         `;
     }
 }
