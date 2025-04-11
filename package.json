@@ -1,7 +1,4 @@
 {
-  "scripts": {
-    "dev": "your dev command",
-    "build": "your build command",
-    "start": "your start command"
-  }
+  "name": "COINCRAFTER",
+  "version": "1.0.0"
 }
