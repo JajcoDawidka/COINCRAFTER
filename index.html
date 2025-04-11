@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CoinCrafter</title>
+    <link rel="icon" href="logo.png" type="logo">
+    <link rel="stylesheet" href="style.css">
+    <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.min.js"></script>
+    <script src="https://unpkg.com/@solana/wallet-adapter-phantom@latest/lib/index.iife.min.js"></script>
+    <script src="https://unpkg.com/@solana/web3.js@1.73.0/lib/index.iife.min.js"></script>
+<script src="https://unpkg.com/@solana/wallet-adapter-phantom@0.9.15/lib/index.iife.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/buffer@6.0.3/dist/buffer.min.js"></script>
+</head>
+<body>
+    <header>
+        <nav>
+            <div class="logo-container">
+                <img src="logo_lewa_gora.png" alt="CoinCrafter Logo" class="logo">
+            </div>
+            <div id="zakladki">
+                <ul>
+                    <li><a href="#home" class="nav-link">Home</a></li>
+                    <li><a href="#create-token" class="nav-link active">Create Token</a></li>
+                    <li>
+                        <a href="https://raydium.io/liquidity/create-pool/" target="_blank" class="nav-link">Liquidity Pool</a>
+                    </li>
+                    <li>
+                        <a href="https://raydium.io/portfolio/?position_tab=standard" target="_blank" class="nav-link">Manage Liquidity</a>
+                    </li>
+                </ul>
+            </div>
+        </nav>
+        <div class="wallet-container">
+            <button id="connect-wallet" class="connect-wallet-btn">
+                Connect Wallet
+            </button>
+            <div id="wallet-address" class="wallet-address"></div>
+        </div>
+    </header>
+
+    <div class="main-content">
+        <!-- Sekcja Home -->
+        <section id="home" class="hidden-section">
+            <div class="hero-container">
+                <img src="home_page_1_obr.png" alt="CoinCrafter Hero" class="home-image">
+                <div class="hero-text">
+                    <div class="headlines">
+                        <h1 class="main-headline">Launch Your <span class="solana-highlight">$SOLANA</span> Token</h1>
+                        <h2 class="sub-headline">Take It To The <span class="moon-text">MOON</span></h2>
+                    </div>
+                    <div class="description">
+                        <p class="tagline">Create and deploy your Solana coin in seconds</p>
+                        <p class="sub-tagline">Global reach · Instant scaling · Zero hassle</p>
+                    </div>
+                    <a href="#create-token" class="create-token-btn">
+                        <span>CREATE TOKEN</span>
+                        <svg class="arrow-icon" viewBox="0 0 24 24">
+                            <path d="M5 12h14M12 5l7 7-7 7"></path>
+                        </svg>
+                    </a>
+                </div>                
+            </div>
+        </section>
+
+        <!-- Sekcja Create Token -->
+        <section id="create-token" class="active-section">
+            <div class="token-form-container">
+                <h1>Create Your Solana Token</h1>
+                
+                <div class="token-form-grid">
+                    <div class="form-column">
+                        <div class="form-group">
+                            <label for="token-name">Token Name *</label>
+                            <input type="text" id="token-name" placeholder="Ex: Trump Coin">
+                            <div class="form-hint">Max 32 characters in your name</div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="token-decimals">Decimals *</label>
+                            <select id="token-decimals">
+                                <option value="9">9 (Recommended)</option>
+                                <option value="6">6</option>
+                                <option value="3">3</option>
+                                <option value="0">0</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group logo-section">
+                            <label>Logo *</label>
+                            <div class="logo-upload">
+                                <div class="upload-area" id="logo-upload-area">
+                                    <svg class="upload-icon" viewBox="0 0 24 24">
+                                        <path d="M19 13v6a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-6M15 8l-4-4-4 4m4-4v13" 
+                                              stroke="currentColor" 
+                                              stroke-width="2" 
+                                              fill="none" 
+                                              stroke-linecap="round" 
+                                              stroke-linejoin="round"/>
+                                    </svg>
+                                    <p>Drag and drop here to upload</p>
+                                    <p class="file-requirements">.png .jpg 1000x1000 px</p>
+                                </div>
+                                <button class="generate-logo-btn" disabled>
+                                    <span>Generate Personalized AI Logo</span>
+                                    <span class="coming-soon">COMING SOON</span>
+                                </button>
+                            </div>
+                            <div class="form-hint">Add logo for your token</div>
+                        </div>
+                        
+                        <div class="form-group description-section">
+                            <label for="token-description">Description *</label>
+                            <textarea id="token-description" rows="3" placeholder="Here you can describe your token"></textarea>
+                        </div>
+                    </div>
+                    
+                    <div class="form-column">
+                        <div class="form-group">
+                            <label for="token-symbol">Token Symbol *</label>
+                            <input type="text" id="token-symbol" placeholder="Ex: TCOIN">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="token-supply">Supply *</label>
+                            <input type="number" id="token-supply" value="1000000000">
+                            <div class="form-hint">The initial number of available tokens that will be created in your wallet</div>
+                        </div>
+                        
+                        <div class="social-section">
+                            <h3>Social Media Links</h3>
+                            <p>Add social media links to your token</p>
+                            
+                            <label class="social-toggle">
+                                <input type="checkbox" id="social-links-toggle" class="hidden-checkbox">
+                                <div class="social-toggle-container">
+                                    <div class="custom-checkbox"></div>
+                                    <span class="social-toggle-text">Add Social Links</span>
+                                    <span class="sol-cost">+0.1 SOL</span>
+                                </div>
+                            </label>
+                            
+                            <div class="social-fields" id="social-fields">
+                                <div class="social-field-group">
+                                    <label for="telegram-link">Telegram Link *</label>
+                                    <input type="text" id="telegram-link" placeholder="Ex: https://t.me/lunalau.nch">
+                                    <div class="form-hint">Example: https://t.me/yourchannel</div>
+                                </div>
+                                
+                                <div class="social-field-group">
+                                    <label for="twitter-link">Twitter/X Link *</label>
+                                    <input type="text" id="twitter-link" placeholder="Ex: https://x.com/@lunalau.nch">
+                                    <div class="form-hint">Example: https://x.com/yourusername</div>
+                                </div>
+                                
+                                <div class="social-field-group">
+                                    <label for="website-link">Website Link</label>
+                                    <input type="text" id="website-link" placeholder="Ex: https://yourwebsite.com">
+                                    <div class="form-hint">Example: https://yourproject.com</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="revoke-authorities">
+                            <h3>Revoke Authorities (Investor's Booster)</h3>
+                            <p>Solana Token has 3 authorities: Freeze Authority, Mint Authority, and Update Authority. Revoke them to attract more investors.</p>
+                            
+                            <div class="revoke-option">
+                                <input type="checkbox" id="revoke-freeze" checked disabled class="hidden-checkbox">
+                                <div class="revoke-checkbox"></div>
+                                <label for="revoke-freeze" class="revoke-label">Revoke Freeze</label>
+                                <span class="revoke-cost">+0.1 SOL</span>
+                            </div>
+                            <div class="revoke-hint">No one will be able to freeze holders' token accounts anymore</div>
+                            
+                            <div class="revoke-option">
+                                <input type="checkbox" id="revoke-mint" checked disabled class="hidden-checkbox">
+                                <div class="revoke-checkbox"></div>
+                                <label for="revoke-mint" class="revoke-label">Revoke Mint</label>
+                                <span class="revoke-cost">+0.1 SOL</span>
+                            </div>
+                            <div class="revoke-hint">No one will be able to create more tokens anymore</div>
+                            
+                            <div class="revoke-option">
+                                <input type="checkbox" id="revoke-update" checked disabled class="hidden-checkbox">
+                                <div class="revoke-checkbox"></div>
+                                <label for="revoke-update" class="revoke-label">Revoke Update</label>
+                                <span class="revoke-cost">+0.1 SOL</span>
+                            </div>
+                            <div class="revoke-hint">No one will be able to modify token metadata anymore</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="launch-section">
+                    <button class="launch-token-btn" id="launch-btn">
+                        Launch Token
+                    </button>
+                    <div class="fee-info" id="fee-info">
+                        <div class="base-fee">Base fee: <span>0.3 SOL</span></div>
+                        <div class="total-fee">Total: 0.3 SOL</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Sekcja Liquidity Pool -->
+        <section id="liquidity-pool" class="hidden-section">
+            <div class="section-container">
+                <h2>Liquidity Pool</h2>
+                <p>This section is under construction</p>
+            </div>
+        </section>
+
+        <!-- Sekcja Manage Liquidity -->
+        <section id="manage-liquidity" class="hidden-section">
+            <div class="section-container">
+                <h2>Manage Liquidity</h2>
+                <p>This section is under construction</p>
+            </div>
+        </section>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
