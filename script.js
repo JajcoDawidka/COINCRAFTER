@@ -150,11 +150,10 @@ function initNavigation() {
 
     navLinks.forEach(link => {
         link.addEventListener('click', function(e) {
-            const href = this.getAttribute('href');
-            if (href.startsWith('#')) {
+            if (this.hash) {
                 e.preventDefault();
-                showSection(href.substring(1));
-                history.pushState(null, null, href);
+                showSection(this.hash.substring(1));
+                history.pushState(null, null, this.hash);
             }
         });
     });
@@ -164,16 +163,46 @@ function initNavigation() {
         showSection(hash || 'home');
     });
 
-    showSection(window.location.hash.substring(1) || 'home');
+    // Show initial section based on URL
+    const initialHash = window.location.hash.substring(1);
+    showSection(initialHash || 'home');
 }
 
 function initTokenForm() {
     const launchBtn = document.getElementById('launch-btn');
     if (!launchBtn) return;
     
-    document.getElementById('social-links-toggle').addEventListener('change', function() {
-        document.getElementById('social-fields').style.display = this.checked ? 'block' : 'none';
+    const socialToggle = document.getElementById('social-links-toggle');
+    const socialFields = document.getElementById('social-fields');
+    const feeInfo = document.getElementById('fee-info');
+    
+    let baseFee = 0.3;
+    let socialFee = 0.1;
+    
+    function updateFee() {
+        const total = baseFee + (socialToggle.checked ? socialFee : 0);
+        feeInfo.innerHTML = `
+            <div class="base-fee">Base fee: <span>${baseFee} SOL</span></div>
+            ${socialToggle.checked ? `
+                <div class="additional-fees">
+                    <div class="fee-item">
+                        <span>Social Links:</span>
+                        <span class="fee-value">+${socialFee} SOL</span>
+                    </div>
+                </div>
+            ` : ''}
+            <div class="total-fee">Total: ${total} SOL</div>
+        `;
+    }
+    
+    socialToggle.addEventListener('change', function() {
+        socialFields.style.display = this.checked ? 'block' : 'none';
+        updateFee();
     });
+    
+    // Initialize
+    socialFields.style.display = 'none';
+    updateFee();
     
     launchBtn.addEventListener('click', async function() {
         if (!wallet?.isConnected) {
@@ -204,10 +233,10 @@ function initTokenForm() {
         try {
             const amount = parseFloat(document.querySelector('.total-fee').textContent.match(/[\d.]+/)[0]);
             
-            // Create transaction - nowa implementacja
+            // Create transaction
             const transaction = await createTransaction(amount);
             
-            // Send transaction - nowa implementacja
+            // Send transaction
             const signature = await sendTransaction(transaction);
             
             // Confirm transaction
@@ -221,7 +250,6 @@ function initTokenForm() {
         }
     });
 
-    // Nowe funkcje transakcyjne
     async function createTransaction(amount) {
         const transaction = new solanaWeb3.Transaction().add(
             solanaWeb3.SystemProgram.transfer({
@@ -270,12 +298,14 @@ function initLogoUpload() {
     const uploadArea = document.getElementById('logo-upload-area');
     const fileInput = document.createElement('input');
     fileInput.type = 'file';
-    fileInput.accept = 'image/*';
+    fileInput.accept = 'image/png, image/jpeg';
     fileInput.hidden = true;
     document.body.appendChild(fileInput);
 
+    // Click handler
     uploadArea.addEventListener('click', () => fileInput.click());
 
+    // Drag and drop handlers
     uploadArea.addEventListener('dragover', (e) => {
         e.preventDefault();
         uploadArea.classList.add('dragover');
@@ -289,8 +319,7 @@ function initLogoUpload() {
         e.preventDefault();
         uploadArea.classList.remove('dragover');
         if (e.dataTransfer.files.length) {
-            fileInput.files = e.dataTransfer.files;
-            handleFileSelect(fileInput.files[0]);
+            handleFileSelect(e.dataTransfer.files[0]);
         }
     });
 
@@ -301,21 +330,58 @@ function initLogoUpload() {
     });
 
     function handleFileSelect(file) {
+        // Check file type
         if (!file.type.match('image.*')) {
-            alert('Please select an image file');
+            alert('Please select an image file (PNG or JPG)');
+            return;
+        }
+
+        // Check file size if needed
+        if (file.size > 5 * 1024 * 1024) { // 5MB max
+            alert('File is too large. Max size is 5MB');
             return;
         }
 
         const reader = new FileReader();
         reader.onload = (e) => {
+            // Clear previous content
             uploadArea.innerHTML = '';
+            
+            // Create image preview
             const img = document.createElement('img');
             img.src = e.target.result;
             img.style.maxWidth = '100%';
             img.style.maxHeight = '100%';
             img.style.objectFit = 'contain';
+            
+            // Add to upload area
             uploadArea.appendChild(img);
+            
+            // Optional: Add remove button
+            const removeBtn = document.createElement('button');
+            removeBtn.textContent = 'Remove';
+            removeBtn.classList.add('remove-image-btn');
+            removeBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                resetUploadArea();
+            });
+            uploadArea.appendChild(removeBtn);
         };
         reader.readAsDataURL(file);
+    }
+
+    function resetUploadArea() {
+        uploadArea.innerHTML = `
+            <svg class="upload-icon" viewBox="0 0 24 24">
+                <path d="M19 13v6a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-6M15 8l-4-4-4 4m4-4v13" 
+                      stroke="currentColor" 
+                      stroke-width="2" 
+                      fill="none" 
+                      stroke-linecap="round" 
+                      stroke-linejoin="round"/>
+            </svg>
+            <p>Drag and drop here to upload</p>
+            <p class="file-requirements">.png .jpg 1000x1000 px</p>
+        `;
     }
 }
