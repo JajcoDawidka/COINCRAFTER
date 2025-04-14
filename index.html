@@ -1,21 +1,22 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CoinCrafter</title>
-    <link rel="icon" href="logo.png" type="logo">
-    <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>CoinCrafter</title>
+  <link rel="icon" href="logo.png" type="logo" />
+  <link rel="stylesheet" href="style.css" />
 
-    <!-- Solana SDKs -->
-    <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.min.js"></script>
-    <script src="https://unpkg.com/@solana/wallet-adapter-phantom@latest/lib/index.iife.min.js"></script>
+  <!-- Solana SDKs -->
+  <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.min.js"></script>
+  <script src="https://unpkg.com/@solana/wallet-adapter-phantom@latest/lib/index.iife.min.js"></script>
 
-    <!-- Buffer polyfill for browser compatibility -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/buffer/6.0.3/index.min.js"></script>
-    <script>
-        window.Buffer = buffer.Buffer;
-    </script>
+  <!-- Buffer polyfill -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/buffer/6.0.3/index.min.js"></script>
+  <script>
+    // Przypisanie Buffer do window, poprawnie po załadowaniu polyfillu
+    window.Buffer = window.buffer.Buffer;
+  </script>
 </head>
 <body>
     <header>
