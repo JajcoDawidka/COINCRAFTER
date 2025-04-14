@@ -6,8 +6,16 @@
     <title>CoinCrafter</title>
     <link rel="icon" href="logo.png" type="logo">
     <link rel="stylesheet" href="style.css">
+
+    <!-- Solana SDKs -->
     <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.min.js"></script>
     <script src="https://unpkg.com/@solana/wallet-adapter-phantom@latest/lib/index.iife.min.js"></script>
+
+    <!-- Buffer polyfill for browser compatibility -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/buffer/6.0.3/index.min.js"></script>
+    <script>
+        window.Buffer = buffer.Buffer;
+    </script>
 </head>
 <body>
     <header>
@@ -212,7 +220,7 @@
             </div>
         </section>
     </div>
-  <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.js"></script>
-  <script src="script.js"></script>
+
+    <script src="script.js"></script>
 </body>
 </html>
