@@ -8,9 +8,6 @@
     <link rel="stylesheet" href="style.css">
     <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.min.js"></script>
     <script src="https://unpkg.com/@solana/wallet-adapter-phantom@latest/lib/index.iife.min.js"></script>
-    <script src="https://unpkg.com/@solana/web3.js@1.73.0/lib/index.iife.min.js"></script>
-<script src="https://unpkg.com/@solana/wallet-adapter-phantom@0.9.15/lib/index.iife.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/buffer@6.0.3/dist/buffer.min.js"></script>
 </head>
 <body>
     <header>
@@ -24,10 +21,11 @@
                     <li><a href="#create-token" class="nav-link active">Create Token</a></li>
                     <li>
                         <a href="https://raydium.io/liquidity/create-pool/" target="_blank" class="nav-link">Liquidity Pool</a>
-                    </li>
-                    <li>
+                      </li>
+                      <li>
                         <a href="https://raydium.io/portfolio/?position_tab=standard" target="_blank" class="nav-link">Manage Liquidity</a>
-                    </li>
+                      </li>
+                      
                 </ul>
             </div>
         </nav>
@@ -91,12 +89,7 @@
                             <div class="logo-upload">
                                 <div class="upload-area" id="logo-upload-area">
                                     <svg class="upload-icon" viewBox="0 0 24 24">
-                                        <path d="M19 13v6a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-6M15 8l-4-4-4 4m4-4v13" 
-                                              stroke="currentColor" 
-                                              stroke-width="2" 
-                                              fill="none" 
-                                              stroke-linecap="round" 
-                                              stroke-linejoin="round"/>
+                                        <path d="M19 13v6a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-6M15 8l-4-4-4 4m4-4v13"></path>
                                     </svg>
                                     <p>Drag and drop here to upload</p>
                                     <p class="file-requirements">.png .jpg 1000x1000 px</p>
@@ -193,12 +186,11 @@
                 </div>
                 
                 <div class="launch-section">
-                    <button class="launch-token-btn" id="launch-btn">
+                    <button class="launch-token-btn">
                         Launch Token
                     </button>
-                    <div class="fee-info" id="fee-info">
-                        <div class="base-fee">Base fee: <span>0.3 SOL</span></div>
-                        <div class="total-fee">Total: 0.3 SOL</div>
+                    <div class="fee-info">
+                        <!-- Tu będzie dynamicznie wstawiana informacja o opłatach -->
                     </div>
                 </div>
             </div>
