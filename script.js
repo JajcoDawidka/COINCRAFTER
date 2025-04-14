@@ -40,7 +40,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
 window.Buffer = window.buffer.Buffer;
 
-
 // =============================================
 // MAIN CONFIG
 // =============================================
