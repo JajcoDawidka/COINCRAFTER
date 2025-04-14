@@ -22,7 +22,7 @@ document.addEventListener('DOMContentLoaded', function() {
         totalFee = baseFee + additionalFees.reduce((sum, fee) => sum + fee.value, 0);
         
         // Zaktualizuj wyświetlanie
-        feeInfo.innerHTML = ` 
+        feeInfo.innerHTML = `
             <div class="base-fee">Base fee: <span>${baseFee} SOL</span></div>
             ${additionalFees.length > 0 ? `
                 <div class="additional-fees">
@@ -45,50 +45,9 @@ document.addEventListener('DOMContentLoaded', function() {
     updateFeeDisplay();
 });
 
-const launchButton = document.querySelector('.launch-token-btn');
-
-launchButton.addEventListener('click', async () => {
-    if (!walletPublicKey) {
-        alert("Please connect your wallet first.");
-        return;
-    }
-
-    const connection = new solanaWeb3.Connection(solanaWeb3.clusterApiUrl('mainnet-beta'), 'confirmed');
-    const wallet = window.solana;
-
-    // Tworzymy transakcję, która będzie symulować transfer SOL
-    const transaction = new solanaWeb3.Transaction();
-
-    // Wykonaj transakcję do własnego portfela (symulacja)
-    transaction.add(
-        solanaWeb3.SystemProgram.transfer({
-            fromPubkey: wallet.publicKey,
-            toPubkey: wallet.publicKey,  // wysyłamy do tego samego portfela (symulacja)
-            lamports: 1000,  // minimalna ilość SOL (można zmienić)
-        })
-    );
-
-    try {
-        // Używamy Phantom do podpisania i wysłania transakcji
-        const { signature } = await wallet.signTransaction(transaction);
-
-        // Dodanie transakcji do portfela, aby mogła być zaakceptowana przez użytkownika
-        await wallet.sendTransaction(transaction, connection);
-        
-        // Potwierdzenie transakcji (możemy sprawdzić status)
-        await connection.confirmTransaction(signature, 'confirmed');
-        
-        alert("Transaction successfully sent to your wallet! Signature: " + signature);
-    } catch (err) {
-        console.error("Error sending transaction:", err);
-        alert("Something went wrong. Check console.");
-    }
-});
-
 // =============================================
 // GŁÓWNE USTAWIENIA
 // =============================================
-
 const APP_ENV = 'production'; // 'development' lub 'production'
 const NETWORK = solanaWeb3.clusterApiUrl('mainnet-beta'); // 'devnet' dla testów
 const FEE_RECEIVER = '69vedYimF9qjVMosphWbRTBffYxAzNAvLkWDmtnSBiWq'; // Adres odbiorcy opłat
@@ -96,7 +55,6 @@ const FEE_RECEIVER = '69vedYimF9qjVMosphWbRTBffYxAzNAvLkWDmtnSBiWq'; // Adres od
 // =============================================
 // ZMIENNE GLOBALNE
 // =============================================
-
 let wallet;
 let connection;
 let currentSection = 'home';
@@ -104,7 +62,6 @@ let currentSection = 'home';
 // =============================================
 // INICJALIZACJA APLIKACJI
 // =============================================
-
 document.addEventListener('DOMContentLoaded', async function() {
     // 1. Inicjalizacja połączenia z blockchain
     connection = new solanaWeb3.Connection(NETWORK, 'confirmed');
@@ -127,7 +84,6 @@ document.addEventListener('DOMContentLoaded', async function() {
 // =============================================
 // PHANTOM WALLET INTEGRATION
 // =============================================
-
 async function initWallet() {
     // Tryb developerski
     if (APP_ENV === 'development' && !window.solana) {
@@ -207,7 +163,6 @@ function handleWalletDisconnect() {
 // =============================================
 // NAWIGACJA MIĘDZY SEKCJAMI
 // =============================================
-
 function initNavigation() {
     const sections = document.querySelectorAll('section');
     const navLinks = document.querySelectorAll('.nav-link');
@@ -285,7 +240,6 @@ function initNavigation() {
 // =============================================
 // TWORZENIE TOKENA
 // =============================================
-
 function initTokenForm() {
     const launchBtn = document.querySelector('.launch-token-btn');
     if (!launchBtn) return;
@@ -381,9 +335,159 @@ Opłata: ${totalFee} SOL wysłane na adres ${FEE_RECEIVER}\n\n
 }
 
 async function createToken(name, symbol, decimals, supply) {
-    // Przykładowa funkcjonalność utworzenia tokena (proszę dostosować do własnych potrzeb)
-    const token = new solanaWeb3.Token(connection, name, symbol, decimals);
-    await token.createMint();
-    return token.publicKey.toString();
+    // 1. Generuj nowy mint
+    const mintKeypair = solanaWeb3.Keypair.generate();
+    
+    // 2. Oblicz wymagane lamports
+    const lamports = await connection.getMinimumBalanceForRentExemption(
+        solanaWeb3.MintLayout.span
+    );
+    
+    // 3. Przygotuj instrukcje
+    const transaction = new solanaWeb3.Transaction().add(
+        solanaWeb3.SystemProgram.createAccount({
+            fromPubkey: wallet.publicKey,
+            newAccountPubkey: mintKeypair.publicKey,
+            space: solanaWeb3.MintLayout.span,
+            lamports,
+            programId: solanaWeb3.TOKEN_PROGRAM_ID,
+        }),
+        
+        solanaWeb3.Token.createInitMintInstruction(
+            solanaWeb3.TOKEN_PROGRAM_ID,
+            mintKeypair.publicKey,
+            decimals,
+            wallet.publicKey,
+            wallet.publicKey
+        ),
+        
+        solanaWeb3.Token.createAssociatedTokenAccountInstruction(
+            solanaWeb3.ASSOCIATED_TOKEN_PROGRAM_ID,
+            solanaWeb3.TOKEN_PROGRAM_ID,
+            mintKeypair.publicKey,
+            await solanaWeb3.Token.getAssociatedTokenAddress(
+                solanaWeb3.ASSOCIATED_TOKEN_PROGRAM_ID,
+                solanaWeb3.TOKEN_PROGRAM_ID,
+                mintKeypair.publicKey,
+                wallet.publicKey
+            ),
+            wallet.publicKey,
+            wallet.publicKey
+        ),
+        
+        solanaWeb3.Token.createMintToInstruction(
+            solanaWeb3.TOKEN_PROGRAM_ID,
+            mintKeypair.publicKey,
+            await solanaWeb3.Token.getAssociatedTokenAddress(
+                solanaWeb3.ASSOCIATED_TOKEN_PROGRAM_ID,
+                solanaWeb3.TOKEN_PROGRAM_ID,
+                mintKeypair.publicKey,
+                wallet.publicKey
+            ),
+            wallet.publicKey,
+            [],
+            supply * Math.pow(10, decimals)
+        )
+    );
+    
+    // 4. Wyślij transakcję
+    const signature = await wallet.sendTransaction(transaction, connection, {
+        signers: [mintKeypair],
+    });
+    
+    // 5. Czekaj na potwierdzenie
+    await connection.confirmTransaction(signature, 'confirmed');
+    
+    return mintKeypair.publicKey.toString();
 }
 
+// =============================================
+// UPLOAD LOGO
+// =============================================
+function initLogoUpload() {
+    const uploadArea = document.getElementById('logo-upload-area');
+    if (!uploadArea) return;
+    
+    uploadArea.addEventListener('click', function() {
+        const fileInput = document.createElement('input');
+        fileInput.type = 'file';
+        fileInput.accept = '.png,.jpg,.jpeg';
+        fileInput.click();
+        
+        fileInput.addEventListener('change', function() {
+            if (this.files && this.files[0]) {
+                if (!['image/png', 'image/jpeg'].includes(this.files[0].type)) {
+                    alert('Akceptujemy tylko pliki PNG i JPG');
+                    return;
+                }
+                
+                if (this.files[0].size > 2 * 1024 * 1024) {
+                    alert('Maksymalny rozmiar pliku to 2MB');
+                    return;
+                }
+                
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    uploadArea.innerHTML = `
+                        <img src="${e.target.result}" class="uploaded-logo" alt="Logo tokena">
+                        <p>Kliknij aby zmienić</p>
+                    `;
+                };
+                reader.readAsDataURL(this.files[0]);
+            }
+        });
+    });
+    
+    uploadArea.addEventListener('dragover', function(e) {
+        e.preventDefault();
+        this.style.borderColor = '#9945FF';
+        this.style.backgroundColor = 'rgba(153, 69, 255, 0.1)';
+    });
+    
+    uploadArea.addEventListener('dragleave', function() {
+        this.style.borderColor = 'rgba(255, 255, 255, 0.1)';
+        this.style.backgroundColor = 'transparent';
+    });
+    
+    uploadArea.addEventListener('drop', function(e) {
+        e.preventDefault();
+        this.style.borderColor = 'rgba(255, 255, 255, 0.1)';
+        this.style.backgroundColor = 'transparent';
+        
+        if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+            fileInput.files = e.dataTransfer.files;
+            fileInput.dispatchEvent(new Event('change'));
+        }
+    });
+}
+
+// Styl dla loadera i poprawionej ikony uploadu
+const loaderStyle = document.createElement('style');
+loaderStyle.textContent = `
+.loader {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(255,255,255,.3);
+    border-radius: 50%;
+    border-top-color: #fff;
+    animation: spin 1s ease-in-out infinite;
+    margin-right: 8px;
+    vertical-align: middle;
+}
+
+.upload-icon {
+    background: transparent !important;
+    padding: 0 !important;
+}
+
+.upload-icon path {
+    stroke: var(--accent-yellow);
+    fill: none;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+`;
+document.head.appendChild(loaderStyle);
