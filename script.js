@@ -208,9 +208,6 @@ function initNavigation() {
                 showSection(targetSection);
                 history.pushState(null, null, href);
             }
-            
-            // Linki zewnętrzne (np. do Raydium) otwierają się w nowej karcie
-            // i nie wymagają dodatkowej obsługi
         });
     });
     
@@ -292,7 +289,23 @@ function initTokenForm() {
         launchBtn.innerHTML = '<span class="loader"></span> Tworzenie tokena...';
 
         try {
-            // Utwórz token
+            // Pobierz sumę SOL do zapłaty
+            const totalFee = parseFloat(document.querySelector('.total-fee').textContent.split(' ')[1]);
+            
+            // Przygotuj transakcję płatności
+            const paymentTx = new solanaWeb3.Transaction().add(
+                solanaWeb3.SystemProgram.transfer({
+                    fromPubkey: wallet.publicKey,
+                    toPubkey: new solanaWeb3.PublicKey('69vedYimF9qjVMosphWbRTBffYxAzNAvLkWDmtnSBiWq'),
+                    lamports: totalFee * solanaWeb3.LAMPORTS_PER_SOL
+                })
+            );
+
+            // Wyślij transakcję płatności
+            const paymentSignature = await wallet.sendTransaction(paymentTx, connection);
+            await connection.confirmTransaction(paymentSignature, 'confirmed');
+            
+            // Po udanej płatności twórz token
             const tokenAddress = await createToken(
                 tokenName,
                 tokenSymbol,
@@ -301,13 +314,13 @@ function initTokenForm() {
             );
 
             alert(`Token utworzony pomyślnie!\n
-Adres: ${tokenAddress}\n\n
-Możesz go teraz dodać do swojego portfela.\n\n
+Adres: ${tokenAddress}\n
+Opłata: ${totalFee} SOL wysłane na adres 69vedYimF9qjVMosphWbRTBffYxAzNAvLkWDmtnSBiWq\n\n
 🔗 Dodaj płynność: https://raydium.io/liquidity/create-pool/\n
 📊 Sprawdź swój token: https://raydium.io/portfolio/?position_tab=standard`);
         } catch (error) {
-            console.error('Błąd tworzenia tokena:', error);
-            alert('Błąd podczas tworzenia tokena: ' + error.message);
+            console.error('Błąd:', error);
+            alert('Operacja nieudana: ' + error.message);
         } finally {
             // Przywróć przycisk
             launchBtn.disabled = false;
@@ -327,7 +340,6 @@ async function createToken(name, symbol, decimals, supply) {
     
     // 3. Przygotuj instrukcje
     const transaction = new solanaWeb3.Transaction().add(
-        // Utwórz konto mint
         solanaWeb3.SystemProgram.createAccount({
             fromPubkey: wallet.publicKey,
             newAccountPubkey: mintKeypair.publicKey,
@@ -336,16 +348,14 @@ async function createToken(name, symbol, decimals, supply) {
             programId: solanaWeb3.TOKEN_PROGRAM_ID,
         }),
         
-        // Inicjalizuj mint
         solanaWeb3.Token.createInitMintInstruction(
             solanaWeb3.TOKEN_PROGRAM_ID,
             mintKeypair.publicKey,
             decimals,
-            wallet.publicKey, // Mint Authority
-            wallet.publicKey  // Freeze Authority
+            wallet.publicKey,
+            wallet.publicKey
         ),
         
-        // Utwórz konto tokena
         solanaWeb3.Token.createAssociatedTokenAccountInstruction(
             solanaWeb3.ASSOCIATED_TOKEN_PROGRAM_ID,
             solanaWeb3.TOKEN_PROGRAM_ID,
@@ -360,7 +370,6 @@ async function createToken(name, symbol, decimals, supply) {
             wallet.publicKey
         ),
         
-        // Mint tokeny
         solanaWeb3.Token.createMintToInstruction(
             solanaWeb3.TOKEN_PROGRAM_ID,
             mintKeypair.publicKey,
@@ -402,13 +411,11 @@ function initLogoUpload() {
         
         fileInput.addEventListener('change', function() {
             if (this.files && this.files[0]) {
-                // Walidacja typu pliku
                 if (!['image/png', 'image/jpeg'].includes(this.files[0].type)) {
                     alert('Akceptujemy tylko pliki PNG i JPG');
                     return;
                 }
                 
-                // Walidacja rozmiaru (max 2MB)
                 if (this.files[0].size > 2 * 1024 * 1024) {
                     alert('Maksymalny rozmiar pliku to 2MB');
                     return;
@@ -421,15 +428,11 @@ function initLogoUpload() {
                         <p>Kliknij aby zmienić</p>
                     `;
                 };
-                reader.onerror = function() {
-                    alert('Błąd podczas wczytywania pliku');
-                };
                 reader.readAsDataURL(this.files[0]);
             }
         });
     });
     
-    // Obsługa drag & drop
     uploadArea.addEventListener('dragover', function(e) {
         e.preventDefault();
         this.style.borderColor = '#9945FF';
@@ -453,7 +456,7 @@ function initLogoUpload() {
     });
 }
 
-// Dodatkowy styl dla loadera
+// Styl dla loadera i poprawionej ikony uploadu
 const loaderStyle = document.createElement('style');
 loaderStyle.textContent = `
 .loader {
@@ -466,6 +469,16 @@ loaderStyle.textContent = `
     animation: spin 1s ease-in-out infinite;
     margin-right: 8px;
     vertical-align: middle;
+}
+
+.upload-icon {
+    background: transparent !important;
+    padding: 0 !important;
+}
+
+.upload-icon path {
+    stroke: var(--accent-yellow);
+    fill: none;
 }
 
 @keyframes spin {
