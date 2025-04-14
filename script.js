@@ -38,6 +38,9 @@ document.addEventListener('DOMContentLoaded', function () {
     updateFeeDisplay();
 });
 
+window.Buffer = window.buffer.Buffer;
+
+
 // =============================================
 // MAIN CONFIG
 // =============================================
