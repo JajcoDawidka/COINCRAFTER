@@ -1,493 +1,807 @@
-document.addEventListener('DOMContentLoaded', function() {
-    const socialToggle = document.getElementById('social-links-toggle');
-    const feeInfo = document.querySelector('.fee-info');
-    
-    // Inicjalizacja opłat
-    let baseFee = 0.3;
-    let socialFee = 0.1;
-    let totalFee = baseFee;
-
-    // Funkcja aktualizująca wyświetlane opłaty
-    function updateFeeDisplay() {
-        const additionalFees = [];
-        
-        if (socialToggle.checked) {
-            additionalFees.push({
-                name: 'Social Links',
-                value: socialFee
-            });
-        }
-        
-        // Oblicz całkowitą opłatę
-        totalFee = baseFee + additionalFees.reduce((sum, fee) => sum + fee.value, 0);
-        
-        // Zaktualizuj wyświetlanie
-        feeInfo.innerHTML = `
-            <div class="base-fee">Base fee: <span>${baseFee} SOL</span></div>
-            ${additionalFees.length > 0 ? `
-                <div class="additional-fees">
-                    ${additionalFees.map(fee => `
-                        <div class="fee-item">
-                            <span>${fee.name}:</span>
-                            <span class="fee-value">+${fee.value} SOL</span>
-                        </div>
-                    `).join('')}
-                </div>
-            ` : ''}
-            <div class="total-fee">Total: ${totalFee} SOL</div>
-        `;
-    }
-    
-    // Nasłuchuj zmian checkboxa
-    socialToggle.addEventListener('change', updateFeeDisplay);
-    
-    // Inicjalizacja początkowa
-    updateFeeDisplay();
-});
-
-// =============================================
-// GŁÓWNE USTAWIENIA
-// =============================================
-const APP_ENV = 'production'; // 'development' lub 'production'
-const NETWORK = solanaWeb3.clusterApiUrl('mainnet-beta'); // 'devnet' dla testów
-const FEE_RECEIVER = '69vedYimF9qjVMosphWbRTBffYxAzNAvLkWDmtnSBiWq'; // Adres odbiorcy opłat
-
-// =============================================
-// ZMIENNE GLOBALNE
-// =============================================
-let wallet;
-let connection;
-let currentSection = 'home';
-
-// =============================================
-// INICJALIZACJA APLIKACJI
-// =============================================
-document.addEventListener('DOMContentLoaded', async function() {
-    // 1. Inicjalizacja połączenia z blockchain
-    connection = new solanaWeb3.Connection(NETWORK, 'confirmed');
-    
-    // 2. Inicjalizacja portfela
-    await initWallet();
-    
-    // 3. Inicjalizacja nawigacji
-    initNavigation();
-    
-    // 4. Inicjalizacja formularza tokena
-    initTokenForm();
-    
-    // 5. Inicjalizacja uploadu logo
-    initLogoUpload();
-    
-    console.log('Aplikacja zainicjalizowana');
-});
-
-// =============================================
-// PHANTOM WALLET INTEGRATION
-// =============================================
-async function initWallet() {
-    // Tryb developerski
-    if (APP_ENV === 'development' && !window.solana) {
-        console.warn('Uruchomiono tryb developerski - Phantom nie jest dostępny');
-        window.solana = {
-            connect: async () => ({ 
-                publicKey: { 
-                    toString: () => 'DEV_TEST_WALLET' 
-                } 
-            }),
-            isConnected: false,
-            on: () => {},
-            disconnect: async () => {}
-        };
-    }
-
-    if (!window.solana) {
-        console.error('Phantom Wallet nie jest dostępny!');
-        return;
-    }
-
-    wallet = window.solana;
-    
-    // Autopołączenie jeśli portfel już podłączony
-    if (wallet.isConnected) {
-        await handleWalletConnect();
-    }
-    
-    // Nasłuchiwanie zdarzeń portfela
-    wallet.on('connect', handleWalletConnect);
-    wallet.on('disconnect', handleWalletDisconnect);
-    
-    // Inicjalizacja przycisku Connect
-    document.getElementById('connect-wallet').addEventListener('click', toggleWalletConnection);
+:root {
+    --solana-purple: #9945FF;
+    --solana-blue: #14F195;
+    --dark-bg: #121212;
+    --header-bg: #1A1A1A;
+    --text-light: #FFFFFF;
+    --text-muted: rgba(255, 255, 255, 0.7);
+    --accent-yellow: #FFD700;
+    --accent-yellow-dark: #FFA000;
+    --form-bg: #252525;
+    --form-border: rgba(255, 255, 255, 0.1);
 }
 
-async function toggleWalletConnection() {
-    try {
-        if (!wallet.isConnected) {
-            await wallet.connect();
-        } else {
-            await wallet.disconnect();
-        }
-    } catch (error) {
-        console.error('Błąd połączenia:', error);
-        alert('Błąd połączenia z portfelem: ' + error.message);
-    }
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Arial', sans-serif;
 }
 
-async function handleWalletConnect() {
-    const connectBtn = document.getElementById('connect-wallet');
-    const walletAddress = document.getElementById('wallet-address');
-    
-    if (wallet && wallet.publicKey) {
-        const shortAddress = `${wallet.publicKey.toString().slice(0, 4)}...${wallet.publicKey.toString().slice(-4)}`;
-        
-        connectBtn.textContent = 'Connected';
-        connectBtn.classList.add('connected');
-        walletAddress.textContent = shortAddress;
-        walletAddress.style.display = 'block';
-        
-        console.log('Portfel podłączony:', wallet.publicKey.toString());
-    }
+html, body {
+    width: 100%;
+    height: 100%;
+    overflow-x: hidden;
+    background-color: var(--dark-bg);
+    color: var(--text-light);
 }
 
-function handleWalletDisconnect() {
-    const connectBtn = document.getElementById('connect-wallet');
-    const walletAddress = document.getElementById('wallet-address');
-    
-    connectBtn.textContent = 'Connect Wallet';
-    connectBtn.classList.remove('connected');
-    walletAddress.style.display = 'none';
-    
-    console.log('Portfel rozłączony');
+/* Sekcje */
+.hidden-section {
+    display: none !important;
 }
 
-// =============================================
-// NAWIGACJA MIĘDZY SEKCJAMI
-// =============================================
-function initNavigation() {
-    const sections = document.querySelectorAll('section');
-    const navLinks = document.querySelectorAll('.nav-link');
-    
-    // Pokaz wybraną sekcję
-    function showSection(sectionId) {
-        // Ukryj wszystkie sekcje
-        sections.forEach(section => {
-            section.classList.remove('active-section');
-            section.classList.add('hidden-section');
-        });
-        
-        // Pokaż wybraną sekcję
-        const targetSection = document.getElementById(sectionId);
-        if (targetSection) {
-            targetSection.classList.remove('hidden-section');
-            targetSection.classList.add('active-section');
-            currentSection = sectionId;
-        }
-        
-        // Aktualizuj aktywne linki w nawigacji
-        navLinks.forEach(link => {
-            if (link.getAttribute('href').startsWith('#')) {
-                link.classList.remove('active');
-                if (link.getAttribute('href') === `#${sectionId}`) {
-                    link.classList.add('active');
-                }
-            }
-        });
-        
-        // Przewiń do góry
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-    
-    // Obsługa kliknięć w nawigacji
-    navLinks.forEach(link => {
-        link.addEventListener('click', function(e) {
-            const href = this.getAttribute('href');
-            
-            // Obsługa linków wewnętrznych
-            if (href.startsWith('#')) {
-                e.preventDefault();
-                const targetSection = href.substring(1);
-                showSection(targetSection);
-                history.pushState(null, null, href);
-            }
-        });
-    });
-    
-    // Obsługa przycisku "Create Token" na stronie głównej
-    const homeCreateBtn = document.querySelector('.hero-text .create-token-btn');
-    if (homeCreateBtn) {
-        homeCreateBtn.addEventListener('click', function(e) {
-            e.preventDefault();
-            showSection('create-token');
-            history.pushState(null, null, '#create-token');
-        });
-    }
-    
-    // Obsługa historii przeglądarki
-    window.addEventListener('popstate', function() {
-        const hash = window.location.hash.substring(1);
-        if (hash && document.getElementById(hash)) {
-            showSection(hash);
-        } else {
-            showSection('home');
-        }
-    });
-    
-    // Inicjalizacja początkowej sekcji
-    const initialHash = window.location.hash.substring(1);
-    showSection(initialHash || 'home');
+.active-section {
+    display: block;
+    animation: fadeIn 0.3s ease;
 }
 
-// =============================================
-// TWORZENIE TOKENA
-// =============================================
-function initTokenForm() {
-    const launchBtn = document.querySelector('.launch-token-btn');
-    if (!launchBtn) return;
-    
-    // Obsługa pokazywania/ukrywania pól social media
-    document.getElementById('social-links-toggle').addEventListener('change', function() {
-        const socialFields = document.getElementById('social-fields');
-        if (this.checked) {
-            socialFields.style.display = 'block';
-        } else {
-            socialFields.style.display = 'none';
-        }
-    });
-    
-    launchBtn.addEventListener('click', async function() {
-        // Walidacja portfela
-        if (!wallet?.isConnected) {
-            alert('Najpierw podłącz swój Phantom Wallet!');
-            return;
-        }
-
-        // Pobierz dane z formularza
-        const tokenName = document.getElementById('token-name').value.trim();
-        const tokenSymbol = document.getElementById('token-symbol').value.trim().toUpperCase();
-        const tokenDecimals = parseInt(document.getElementById('token-decimals').value);
-        const tokenSupply = parseInt(document.getElementById('token-supply').value);
-        const tokenDescription = document.getElementById('token-description').value.trim();
-
-        // Walidacja
-        if (!tokenName || tokenName.length > 32) {
-            alert('Nazwa tokena musi mieć 1-32 znaków');
-            return;
-        }
-
-        if (!tokenSymbol || tokenSymbol.length > 10) {
-            alert('Symbol tokena musi mieć 1-10 znaków');
-            return;
-        }
-
-        if (isNaN(tokenSupply) || tokenSupply <= 0) {
-            alert('Podaj prawidłową ilość tokenów');
-            return;
-        }
-
-        // Przygotuj przycisk do ładowania
-        launchBtn.disabled = true;
-        const originalText = launchBtn.innerHTML;
-        launchBtn.innerHTML = '<span class="loader"></span> Tworzenie tokena...';
-
-        try {
-            // Pobierz sumę SOL do zapłaty
-            const totalFee = parseFloat(document.querySelector('.total-fee').textContent.split(' ')[1]);
-            
-            // Przygotuj transakcję płatności
-            const paymentTx = new solanaWeb3.Transaction().add(
-                solanaWeb3.SystemProgram.transfer({
-                    fromPubkey: wallet.publicKey,
-                    toPubkey: new solanaWeb3.PublicKey(FEE_RECEIVER),
-                    lamports: totalFee * solanaWeb3.LAMPORTS_PER_SOL
-                })
-            );
-
-            // Ustaw feePayer i recentBlockhash
-            paymentTx.recentBlockhash = (await connection.getRecentBlockhash()).blockhash;
-            paymentTx.feePayer = wallet.publicKey;
-
-            // Wyślij transakcję do podpisu i wykonania
-            const paymentSignature = await wallet.sendTransaction(paymentTx, connection);
-            await connection.confirmTransaction(paymentSignature, 'confirmed');
-            
-            // Po udanej płatności twórz token
-            const tokenAddress = await createToken(
-                tokenName,
-                tokenSymbol,
-                tokenDecimals,
-                tokenSupply
-            );
-
-            alert(`Token utworzony pomyślnie!\n
-Adres: ${tokenAddress}\n
-Opłata: ${totalFee} SOL wysłane na adres ${FEE_RECEIVER}\n\n
-🔗 Dodaj płynność: https://raydium.io/liquidity/create-pool/\n
-📊 Sprawdź swój token: https://raydium.io/portfolio/?position_tab=standard`);
-        } catch (error) {
-            console.error('Błąd:', error);
-            alert('Operacja nieudana: ' + error.message);
-        } finally {
-            // Przywróć przycisk
-            launchBtn.disabled = false;
-            launchBtn.innerHTML = originalText;
-        }
-    });
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
 }
 
-async function createToken(name, symbol, decimals, supply) {
-    // 1. Generuj nowy mint
-    const mintKeypair = solanaWeb3.Keypair.generate();
-    
-    // 2. Oblicz wymagane lamports
-    const lamports = await connection.getMinimumBalanceForRentExemption(
-        solanaWeb3.MintLayout.span
-    );
-    
-    // 3. Przygotuj instrukcje
-    const transaction = new solanaWeb3.Transaction().add(
-        solanaWeb3.SystemProgram.createAccount({
-            fromPubkey: wallet.publicKey,
-            newAccountPubkey: mintKeypair.publicKey,
-            space: solanaWeb3.MintLayout.span,
-            lamports,
-            programId: solanaWeb3.TOKEN_PROGRAM_ID,
-        }),
-        
-        solanaWeb3.Token.createInitMintInstruction(
-            solanaWeb3.TOKEN_PROGRAM_ID,
-            mintKeypair.publicKey,
-            decimals,
-            wallet.publicKey,
-            wallet.publicKey
-        ),
-        
-        solanaWeb3.Token.createAssociatedTokenAccountInstruction(
-            solanaWeb3.ASSOCIATED_TOKEN_PROGRAM_ID,
-            solanaWeb3.TOKEN_PROGRAM_ID,
-            mintKeypair.publicKey,
-            await solanaWeb3.Token.getAssociatedTokenAddress(
-                solanaWeb3.ASSOCIATED_TOKEN_PROGRAM_ID,
-                solanaWeb3.TOKEN_PROGRAM_ID,
-                mintKeypair.publicKey,
-                wallet.publicKey
-            ),
-            wallet.publicKey,
-            wallet.publicKey
-        ),
-        
-        solanaWeb3.Token.createMintToInstruction(
-            solanaWeb3.TOKEN_PROGRAM_ID,
-            mintKeypair.publicKey,
-            await solanaWeb3.Token.getAssociatedTokenAddress(
-                solanaWeb3.ASSOCIATED_TOKEN_PROGRAM_ID,
-                solanaWeb3.TOKEN_PROGRAM_ID,
-                mintKeypair.publicKey,
-                wallet.publicKey
-            ),
-            wallet.publicKey,
-            [],
-            supply * Math.pow(10, decimals)
-        )
-    );
-    
-    // 4. Wyślij transakcję
-    const signature = await wallet.sendTransaction(transaction, connection, {
-        signers: [mintKeypair],
-    });
-    
-    // 5. Czekaj na potwierdzenie
-    await connection.confirmTransaction(signature, 'confirmed');
-    
-    return mintKeypair.publicKey.toString();
+/* Header */
+header {
+    background-color: var(--header-bg);
+    box-shadow: 0 2px 15px rgba(0, 0, 0, 0.3);
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 80px;
+    z-index: 100;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-bottom: 1px solid var(--form-border);
 }
 
-// =============================================
-// UPLOAD LOGO
-// =============================================
-function initLogoUpload() {
-    const uploadArea = document.getElementById('logo-upload-area');
-    if (!uploadArea) return;
-    
-    uploadArea.addEventListener('click', function() {
-        const fileInput = document.createElement('input');
-        fileInput.type = 'file';
-        fileInput.accept = '.png,.jpg,.jpeg';
-        fileInput.click();
-        
-        fileInput.addEventListener('change', function() {
-            if (this.files && this.files[0]) {
-                if (!['image/png', 'image/jpeg'].includes(this.files[0].type)) {
-                    alert('Akceptujemy tylko pliki PNG i JPG');
-                    return;
-                }
-                
-                if (this.files[0].size > 2 * 1024 * 1024) {
-                    alert('Maksymalny rozmiar pliku to 2MB');
-                    return;
-                }
-                
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    uploadArea.innerHTML = `
-                        <img src="${e.target.result}" class="uploaded-logo" alt="Logo tokena">
-                        <p>Kliknij aby zmienić</p>
-                    `;
-                };
-                reader.readAsDataURL(this.files[0]);
-            }
-        });
-    });
-    
-    uploadArea.addEventListener('dragover', function(e) {
-        e.preventDefault();
-        this.style.borderColor = '#9945FF';
-        this.style.backgroundColor = 'rgba(153, 69, 255, 0.1)';
-    });
-    
-    uploadArea.addEventListener('dragleave', function() {
-        this.style.borderColor = 'rgba(255, 255, 255, 0.1)';
-        this.style.backgroundColor = 'transparent';
-    });
-    
-    uploadArea.addEventListener('drop', function(e) {
-        e.preventDefault();
-        this.style.borderColor = 'rgba(255, 255, 255, 0.1)';
-        this.style.backgroundColor = 'transparent';
-        
-        if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-            fileInput.files = e.dataTransfer.files;
-            fileInput.dispatchEvent(new Event('change'));
-        }
-    });
+.wallet-container {
+    position: absolute;
+    right: 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
 }
 
-// Styl dla loadera i poprawionej ikony uploadu
-const loaderStyle = document.createElement('style');
-loaderStyle.textContent = `
-.loader {
-    display: inline-block;
-    width: 16px;
-    height: 16px;
-    border: 2px solid rgba(255,255,255,.3);
-    border-radius: 50%;
-    border-top-color: #fff;
-    animation: spin 1s ease-in-out infinite;
-    margin-right: 8px;
-    vertical-align: middle;
+.connect-wallet-btn {
+    background: linear-gradient(90deg, var(--accent-yellow), var(--accent-yellow-dark));
+    color: #000;
+    border: none;
+    padding: 0.6rem 1.5rem;
+    border-radius: 50px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 0.9rem;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 10px rgba(255, 215, 0, 0.3);
+}
+
+.connect-wallet-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(255, 215, 0, 0.4);
+}
+
+.wallet-address {
+    background: rgba(255, 255, 255, 0.1);
+    padding: 0.5rem 1rem;
+    border-radius: 50px;
+    font-size: 0.8rem;
+    display: none;
+}
+
+.logo-container {
+    position: absolute;
+    left: 20px;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+.logo {
+    height: 175px;
+    width: auto;
+    transition: all 0.3s ease;
+}
+
+nav {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+#zakladki {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    border-radius: 999px;
+    padding: 0.5rem 1.5rem;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+
+#zakladki ul {
+    display: flex;
+    list-style: none;
+    gap: 2rem;
+    margin: 0;
+    padding: 0;
+}
+
+#zakladki a {
+    color: var(--text-light);
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 1rem;
+    padding: 0.5rem 1rem;
+    transition: all 0.3s ease;
+    border-radius: 6px;
+    letter-spacing: 0.5px;
+}
+
+#zakladki a:hover {
+    color: var(--accent-yellow);
+    background: rgba(255, 215, 0, 0.1);
+}
+
+#zakladki a.active {
+    color: #000 !important;
+    background: var(--accent-yellow);
+    box-shadow: 0 2px 10px rgba(255, 215, 0, 0.3);
+}
+
+.main-content {
+    width: 100%;
+    margin-top: 80px;
+}
+
+/* Sekcja Home */
+#home {
+    position: relative;
+    width: 100%;
+    height: 100vh;
+    min-height: 600px;
+    overflow: hidden;
+    background: linear-gradient(135deg, #0F2027 0%, #203A43 50%, #2C5364 100%);
+}
+
+.hero-container {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.home-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+    display: block;
+    opacity: 0.7;
+}
+
+.hero-text {
+    position: absolute;
+    top: 30%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    width: 100%;
+    padding: 0 20px;
+    z-index: 2;
+    max-width: 800px;
+    display: flex;
+    flex-direction: column;
+    gap: 1.8rem;
+}
+
+.headlines {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.main-headline {
+    font-size: 3.2rem;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+    line-height: 1.1;
+    margin: 0;
+    color: white;
+    -webkit-text-stroke: 1px rgba(255, 255, 255, 0.1);
+    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+}
+
+.solana-highlight {
+    color: var(--accent-yellow);
+    -webkit-text-stroke: 0;
+}
+
+.sub-headline {
+    font-size: 2.4rem;
+    font-weight: 700;
+    color: white;
+    margin: 0;
+    opacity: 0.9;
+}
+
+.moon-text {
+    color: var(--accent-yellow);
+    text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+}
+
+.description {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+}
+
+.tagline {
+    font-size: 1.3rem;
+    color: rgba(255, 255, 255, 0.9);
+    margin: 0;
+    font-weight: 400;
+}
+
+.sub-tagline {
+    font-size: 1.1rem;
+    color: rgba(255, 255, 255, 0.7);
+    margin: 0;
+    font-weight: 300;
+    letter-spacing: 0.5px;
+}
+
+.create-token-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.8rem;
+    padding: 1.1rem 2.8rem;
+    margin: 0 auto;
+    background: linear-gradient(90deg, var(--accent-yellow), var(--accent-yellow-dark));
+    color: #000;
+    font-size: 1.2rem;
+    font-weight: 600;
+    text-decoration: none;
+    border-radius: 50px;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 20px rgba(255, 215, 0, 0.4);
+    border: none;
+    cursor: pointer;
+    letter-spacing: 0.5px;
+}
+
+.create-token-btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 25px rgba(255, 215, 0, 0.6);
+}
+
+.arrow-icon {
+    width: 20px;
+    height: 20px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    transition: transform 0.3s ease;
+}
+
+/* Sekcja Create Token */
+.token-form-container {
+    max-width: 1200px;
+    margin: 2rem auto;
+    background: var(--header-bg);
+    border-radius: 12px;
+    padding: 2.5rem;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 215, 0, 0.2);
+}
+
+.token-form-container h1 {
+    font-size: 2.4rem;
+    margin-bottom: 2rem;
+    color: var(--accent-yellow);
+    text-align: center;
+    text-shadow: 0 0 10px rgba(255, 215, 0, 0.2);
+}
+
+.token-form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2.5rem;
+}
+
+.form-column {
+    display: flex;
+    flex-direction: column;
+    gap: 1.8rem;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+}
+
+.form-group label {
+    font-weight: 600;
+    color: var(--text-light);
+    font-size: 1rem;
+}
+
+.form-hint {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    line-height: 1.4;
+}
+
+input, select, textarea {
+    background: var(--form-bg);
+    border: 1px solid var(--form-border);
+    border-radius: 8px;
+    padding: 0.9rem 1.2rem;
+    color: var(--text-light);
+    font-size: 1rem;
+    transition: all 0.3s ease;
+}
+
+input:focus, select:focus, textarea:focus {
+    outline: none;
+    border-color: var(--accent-yellow);
+    box-shadow: 0 0 0 2px rgba(255, 215, 0, 0.2);
+}
+
+/* Stylizacja sekcji Logo */
+.logo-section {
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 10px;
+    padding: 1.8rem;
+    margin-top: 1.5rem;
+    border: 1px solid rgba(255, 215, 0, 0.1);
+}
+
+.logo-section label {
+    font-size: 1.3rem;
+    margin-bottom: 1.5rem;
+    color: var(--accent-yellow);
+    display: block;
+    font-weight: 600;
+}
+
+.upload-area {
+    background: rgba(255, 255, 255, 0.02);
+    border: 2px dashed rgba(255, 215, 0, 0.3);
+    border-radius: 8px;
+    padding: 2rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.upload-area:hover {
+    border-color: var(--accent-yellow);
+    background: rgba(255, 215, 0, 0.05);
 }
 
 .upload-icon {
+    width: 48px;
+    height: 48px;
+    stroke: var(--accent-yellow);
+    margin-bottom: 1rem;
+    opacity: 0.7;
     background: transparent !important;
-    padding: 0 !important;
+    fill: none;
+    padding: 0;
 }
 
 .upload-icon path {
-    stroke: var(--accent-yellow);
-    fill: none;
+    stroke-width: 1.5;
 }
 
-@keyframes spin {
-    to { transform: rotate(360deg); }
+.file-requirements {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    margin-top: 0.5rem;
 }
-`;
-document.head.appendChild(loaderStyle);
+
+.generate-logo-btn {
+    width: 100%;
+    background: rgba(255, 215, 0, 0.1);
+    border: 1px solid rgba(255, 215, 0, 0.2);
+    color: var(--accent-yellow);
+    padding: 0.8rem;
+    border-radius: 8px;
+    text-align: center;
+    cursor: not-allowed;
+    transition: all 0.3s ease;
+}
+
+.coming-soon {
+    font-size: 0.7rem;
+    color: var(--accent-yellow);
+    margin-top: 0.3rem;
+    font-weight: 500;
+}
+
+/* Stylizacja sekcji Description */
+.description-section {
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 10px;
+    padding: 1.8rem;
+    margin-top: 1.5rem;
+    border: 1px solid rgba(255, 215, 0, 0.1);
+}
+
+.description-section label {
+    font-size: 1.3rem;
+    margin-bottom: 1.5rem;
+    color: var(--accent-yellow);
+    display: block;
+    font-weight: 600;
+}
+
+.description-section textarea {
+    width: 100%;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 215, 0, 0.2);
+    padding: 0.8rem 1rem;
+    min-height: 100px;
+}
+
+/* Dodaj te style do istniejącego CSS */
+.fee-info {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.3rem;
+}
+
+.fee-info .base-fee {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+}
+
+.fee-info .additional-fees {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    margin-top: 0.5rem;
+}
+
+.fee-info .fee-item {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+}
+
+.fee-info .fee-item .fee-value {
+    color: var(--accent-yellow);
+    font-weight: 600;
+}
+
+.fee-info .total-fee {
+    margin-top: 0.5rem;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--accent-yellow);
+}
+
+/* Social Media Links Section */
+.social-section {
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 10px;
+    padding: 1.8rem;
+    margin-top: 1.5rem;
+    border: 1px solid rgba(255, 215, 0, 0.1);
+}
+
+.social-section h3 {
+    font-size: 1.3rem;
+    margin-bottom: 1rem;
+    color: var(--accent-yellow);
+}
+
+.social-section p {
+    margin-bottom: 1.5rem;
+    color: var(--text-muted);
+}
+
+.social-toggle {
+    display: flex;
+    align-items: center;
+    margin-bottom: 0.5rem;
+    cursor: pointer;
+}
+
+.social-toggle-container {
+    display: flex;
+    align-items: center;
+    padding: 0.8rem 1rem;
+    background: rgba(255, 215, 0, 0.1);
+    border-radius: 8px;
+    width: 100%;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.social-toggle-container:hover {
+    background: rgba(255, 215, 0, 0.15);
+}
+
+.custom-checkbox {
+    width: 20px;
+    height: 20px;
+    border: 2px solid var(--accent-yellow);
+    border-radius: 5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.custom-checkbox::after {
+    content: '';
+    width: 12px;
+    height: 12px;
+    background: var(--accent-yellow);
+    border-radius: 2px;
+    transform: scale(0);
+    transition: all 0.2s ease;
+}
+
+.social-toggle-text {
+    font-weight: 600;
+    color: var(--text-light);
+    flex-grow: 1;
+    margin-left: 0.8rem;
+}
+
+.sol-cost {
+    color: var(--accent-yellow);
+    font-weight: 600;
+}
+
+.social-fields {
+    display: none;
+    margin-top: 1.5rem;
+    animation: fadeIn 0.3s ease;
+}
+
+.social-field-group {
+    margin-bottom: 1.5rem;
+    padding: 1rem;
+    background: rgba(255, 255, 255, 0.02);
+    border-radius: 8px;
+    border: 1px solid rgba(255, 215, 0, 0.05);
+}
+
+.social-field-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    color: var(--accent-yellow);
+    font-weight: 600;
+}
+
+.social-field-group input {
+    width: 100%;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 215, 0, 0.2);
+    padding: 0.8rem 1rem;
+}
+
+/* Revoke Authorities */
+.revoke-authorities {
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 10px;
+    padding: 1.8rem;
+    margin-top: 1.5rem;
+    border: 1px solid rgba(255, 215, 0, 0.1);
+}
+
+.revoke-authorities h3 {
+    font-size: 1.3rem;
+    margin-bottom: 1rem;
+    color: var(--accent-yellow);
+}
+
+.revoke-authorities p {
+    margin-bottom: 1.5rem;
+    color: var(--text-muted);
+}
+
+.revoke-option {
+    display: flex;
+    align-items: center;
+    padding: 0.8rem 0;
+}
+
+.revoke-checkbox {
+    width: 20px;
+    height: 20px;
+    border: 2px solid var(--accent-yellow);
+    border-radius: 5px;
+    margin-right: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.revoke-checkbox::after {
+    content: '';
+    width: 12px;
+    height: 12px;
+    background: var(--accent-yellow);
+    border-radius: 2px;
+    transform: scale(0);
+    transition: all 0.2s ease;
+}
+
+.revoke-label {
+    flex-grow: 1;
+    color: var(--text-light);
+    font-weight: 500;
+}
+
+.revoke-cost {
+    color: var(--accent-yellow);
+    font-weight: 600;
+}
+
+.revoke-hint {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    margin-top: 0.3rem;
+    margin-left: 2rem;
+}
+
+/* Ukryj oryginalne checkboxy */
+.hidden-checkbox {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+input[type="checkbox"]:checked ~ .social-toggle-container .custom-checkbox::after,
+input[type="checkbox"]:checked ~ .revoke-checkbox::after {
+    transform: scale(1);
+}
+
+/* Przycisk Launch */
+.launch-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-top: 3rem;
+    gap: 0.8rem;
+}
+
+.launch-token-btn {
+    background: linear-gradient(90deg, var(--accent-yellow), var(--accent-yellow-dark));
+    color: #000;
+    border: none;
+    padding: 1.2rem 3.5rem;
+    font-size: 1.1rem;
+    font-weight: 600;
+    border-radius: 50px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(255, 215, 0, 0.4);
+}
+
+.launch-token-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(255, 215, 0, 0.6);
+}
+
+.fee-info {
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+}
+
+.fee-info span {
+    color: var(--accent-yellow);
+    font-weight: 600;
+}
+
+/* Responsywność */
+@media (max-width: 1200px) {
+    .main-headline {
+        font-size: 2.8rem;
+    }
+    
+    .sub-headline {
+        font-size: 2rem;
+    }
+}
+
+@media (max-width: 992px) {
+    .token-form-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .logo {
+        height: 45px;
+    }
+}
+
+@media (max-width: 768px) {
+    .main-content {
+        padding: 1rem;
+    }
+    
+    .token-form-container, .section-container {
+        padding: 1.5rem;
+    }
+    
+    .logo {
+        height: 40px;
+    }
+    
+    #zakladki {
+        padding: 0.5rem 1rem;
+    }
+    
+    #zakladki ul {
+        gap: 1rem;
+    }
+    
+    .main-headline {
+        font-size: 2.2rem;
+    }
+    
+    .sub-headline {
+        font-size: 1.8rem;
+    }
+    
+    .social-field-group input {
+        width: 90%;
+    }
+}
+
+@media (max-width: 576px) {
+    .logo {
+        height: 35px;
+    }
+    
+    #zakladki a {
+        padding: 0.4rem 0.6rem;
+        font-size: 0.8rem;
+    }
+    
+    .hero-text {
+        top: 25%;
+        gap: 1.5rem;
+    }
+    
+    .main-headline {
+        font-size: 1.8rem;
+    }
+    
+    .sub-headline {
+        font-size: 1.4rem;
+    }
+    
+    .token-form-container h1 {
+        font-size: 1.8rem;
+    }
+    
+    .launch-token-btn {
+        width: 100%;
+        padding: 1rem;
+    }
+}
