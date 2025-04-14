@@ -50,6 +50,7 @@ document.addEventListener('DOMContentLoaded', function() {
 // =============================================
 const APP_ENV = 'production'; // 'development' lub 'production'
 const NETWORK = solanaWeb3.clusterApiUrl('mainnet-beta'); // 'devnet' dla testów
+const FEE_RECEIVER = '69vedYimF9qjVMosphWbRTBffYxAzNAvLkWDmtnSBiWq'; // Adres odbiorcy opłat
 
 // =============================================
 // ZMIENNE GLOBALNE
@@ -296,12 +297,16 @@ function initTokenForm() {
             const paymentTx = new solanaWeb3.Transaction().add(
                 solanaWeb3.SystemProgram.transfer({
                     fromPubkey: wallet.publicKey,
-                    toPubkey: new solanaWeb3.PublicKey('69vedYimF9qjVMosphWbRTBffYxAzNAvLkWDmtnSBiWq'),
+                    toPubkey: new solanaWeb3.PublicKey(FEE_RECEIVER),
                     lamports: totalFee * solanaWeb3.LAMPORTS_PER_SOL
                 })
             );
 
-            // Wyślij transakcję płatności
+            // Ustaw feePayer i recentBlockhash
+            paymentTx.recentBlockhash = (await connection.getRecentBlockhash()).blockhash;
+            paymentTx.feePayer = wallet.publicKey;
+
+            // Wyślij transakcję do podpisu i wykonania
             const paymentSignature = await wallet.sendTransaction(paymentTx, connection);
             await connection.confirmTransaction(paymentSignature, 'confirmed');
             
@@ -315,7 +320,7 @@ function initTokenForm() {
 
             alert(`Token utworzony pomyślnie!\n
 Adres: ${tokenAddress}\n
-Opłata: ${totalFee} SOL wysłane na adres 69vedYimF9qjVMosphWbRTBffYxAzNAvLkWDmtnSBiWq\n\n
+Opłata: ${totalFee} SOL wysłane na adres ${FEE_RECEIVER}\n\n
 🔗 Dodaj płynność: https://raydium.io/liquidity/create-pool/\n
 📊 Sprawdź swój token: https://raydium.io/portfolio/?position_tab=standard`);
         } catch (error) {
