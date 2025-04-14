@@ -399,7 +399,8 @@ input:focus, select:focus, textarea:focus {
     stroke: var(--accent-yellow);
     margin-bottom: 1rem;
     opacity: 0.7;
-    background: transparent;
+    background: transparent !important;
+    fill: none;
     padding: 0;
 }
 
