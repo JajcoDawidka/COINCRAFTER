@@ -82,6 +82,7 @@ launchButton.addEventListener('click', async () => {
     }
 });
 
+
 // =============================================
 // GŁÓWNE USTAWIENIA
 // =============================================
@@ -277,110 +278,15 @@ function initNavigation() {
 // =============================================
 // TWORZENIE TOKENA
 // =============================================
-function initTokenForm() {
-    const launchBtn = document.querySelector('.launch-token-btn');
-    if (!launchBtn) return;
-    
-    // Obsługa pokazywania/ukrywania pól social media
-    document.getElementById('social-links-toggle').addEventListener('change', function() {
-        const socialFields = document.getElementById('social-fields');
-        if (this.checked) {
-            socialFields.style.display = 'block';
-        } else {
-            socialFields.style.display = 'none';
-        }
-    });
-    
-    launchBtn.addEventListener('click', async function() {
-        // Walidacja portfela
-        if (!wallet?.isConnected) {
-            alert('Najpierw podłącz swój Phantom Wallet!');
-            return;
-        }
-
-        // Pobierz dane z formularza
-        const tokenName = document.getElementById('token-name').value.trim();
-        const tokenSymbol = document.getElementById('token-symbol').value.trim().toUpperCase();
-        const tokenDecimals = parseInt(document.getElementById('token-decimals').value);
-        const tokenSupply = parseInt(document.getElementById('token-supply').value);
-        const tokenDescription = document.getElementById('token-description').value.trim();
-
-        // Walidacja
-        if (!tokenName || tokenName.length > 32) {
-            alert('Nazwa tokena musi mieć 1-32 znaków');
-            return;
-        }
-
-        if (!tokenSymbol || tokenSymbol.length > 10) {
-            alert('Symbol tokena musi mieć 1-10 znaków');
-            return;
-        }
-
-        if (isNaN(tokenSupply) || tokenSupply <= 0) {
-            alert('Podaj prawidłową ilość tokenów');
-            return;
-        }
-
-        // Przygotuj przycisk do ładowania
-        launchBtn.disabled = true;
-        const originalText = launchBtn.innerHTML;
-        launchBtn.innerHTML = '<span class="loader"></span> Tworzenie tokena...';
-
-        try {
-            // Pobierz sumę SOL do zapłaty
-            const totalFee = parseFloat(document.querySelector('.total-fee').textContent.split(' ')[1]);
-            
-            // Przygotuj transakcję płatności
-            const paymentTx = new solanaWeb3.Transaction().add(
-                solanaWeb3.SystemProgram.transfer({
-                    fromPubkey: wallet.publicKey,
-                    toPubkey: new solanaWeb3.PublicKey(FEE_RECEIVER),
-                    lamports: totalFee * solanaWeb3.LAMPORTS_PER_SOL
-                })
-            );
-
-            // Ustaw feePayer i recentBlockhash
-            paymentTx.recentBlockhash = (await connection.getRecentBlockhash()).blockhash;
-            paymentTx.feePayer = wallet.publicKey;
-
-            // Wyślij transakcję do podpisu i wykonania
-            const paymentSignature = await wallet.sendTransaction(paymentTx, connection);
-            await connection.confirmTransaction(paymentSignature, 'confirmed');
-            
-            // Po udanej płatności twórz token
-            const tokenAddress = await createToken(
-                tokenName,
-                tokenSymbol,
-                tokenDecimals,
-                tokenSupply
-            );
-
-            alert(`Token utworzony pomyślnie!\n
-Adres: ${tokenAddress}\n
-Opłata: ${totalFee} SOL wysłane na adres ${FEE_RECEIVER}\n\n
-🔗 Dodaj płynność: https://raydium.io/liquidity/create-pool/\n
-📊 Sprawdź swój token: https://raydium.io/portfolio/?position_tab=standard`);
-        } catch (error) {
-            console.error('Błąd:', error);
-            alert('Operacja nieudana: ' + error.message);
-        } finally {
-            // Przywróć przycisk
-            launchBtn.disabled = false;
-            launchBtn.innerHTML = originalText;
-        }
-    });
-}
-
+// Funkcja do tworzenia tokena i wysyłania transakcji
 async function createToken(name, symbol, decimals, supply) {
-    // 1. Generuj nowy mint
     const mintKeypair = solanaWeb3.Keypair.generate();
-    
-    // 2. Oblicz wymagane lamports
+
+    // Oblicz wymagane lamports
     const lamports = await connection.getMinimumBalanceForRentExemption(
         solanaWeb3.MintLayout.span
     );
-    
-    // 3. Przygotuj instrukcje
+
     const transaction = new solanaWeb3.Transaction().add(
         solanaWeb3.SystemProgram.createAccount({
             fromPubkey: wallet.publicKey,
@@ -389,7 +295,7 @@ async function createToken(name, symbol, decimals, supply) {
             lamports,
             programId: solanaWeb3.TOKEN_PROGRAM_ID,
         }),
-        
+
         solanaWeb3.Token.createInitMintInstruction(
             solanaWeb3.TOKEN_PROGRAM_ID,
             mintKeypair.publicKey,
@@ -397,7 +303,7 @@ async function createToken(name, symbol, decimals, supply) {
             wallet.publicKey,
             wallet.publicKey
         ),
-        
+
         solanaWeb3.Token.createAssociatedTokenAccountInstruction(
             solanaWeb3.ASSOCIATED_TOKEN_PROGRAM_ID,
             solanaWeb3.TOKEN_PROGRAM_ID,
@@ -411,7 +317,7 @@ async function createToken(name, symbol, decimals, supply) {
             wallet.publicKey,
             wallet.publicKey
         ),
-        
+
         solanaWeb3.Token.createMintToInstruction(
             solanaWeb3.TOKEN_PROGRAM_ID,
             mintKeypair.publicKey,
@@ -426,105 +332,14 @@ async function createToken(name, symbol, decimals, supply) {
             supply * Math.pow(10, decimals)
         )
     );
-    
-    // 4. Wyślij transakcję
+
+    // Wyślij transakcję do portfela Phantom
     const signature = await wallet.sendTransaction(transaction, connection, {
         signers: [mintKeypair],
     });
-    
-    // 5. Czekaj na potwierdzenie
+
+    // Potwierdź transakcję
     await connection.confirmTransaction(signature, 'confirmed');
-    
+
     return mintKeypair.publicKey.toString();
 }
-
-// =============================================
-// UPLOAD LOGO
-// =============================================
-function initLogoUpload() {
-    const uploadArea = document.getElementById('logo-upload-area');
-    if (!uploadArea) return;
-    
-    uploadArea.addEventListener('click', function() {
-        const fileInput = document.createElement('input');
-        fileInput.type = 'file';
-        fileInput.accept = '.png,.jpg,.jpeg';
-        fileInput.click();
-        
-        fileInput.addEventListener('change', function() {
-            if (this.files && this.files[0]) {
-                if (!['image/png', 'image/jpeg'].includes(this.files[0].type)) {
-                    alert('Akceptujemy tylko pliki PNG i JPG');
-                    return;
-                }
-                
-                if (this.files[0].size > 2 * 1024 * 1024) {
-                    alert('Maksymalny rozmiar pliku to 2MB');
-                    return;
-                }
-                
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    uploadArea.innerHTML = `
-                        <img src="${e.target.result}" class="uploaded-logo" alt="Logo tokena">
-                        <p>Kliknij aby zmienić</p>
-                    `;
-                };
-                reader.readAsDataURL(this.files[0]);
-            }
-        });
-    });
-    
-    uploadArea.addEventListener('dragover', function(e) {
-        e.preventDefault();
-        this.style.borderColor = '#9945FF';
-        this.style.backgroundColor = 'rgba(153, 69, 255, 0.1)';
-    });
-    
-    uploadArea.addEventListener('dragleave', function() {
-        this.style.borderColor = 'rgba(255, 255, 255, 0.1)';
-        this.style.backgroundColor = 'transparent';
-    });
-    
-    uploadArea.addEventListener('drop', function(e) {
-        e.preventDefault();
-        this.style.borderColor = 'rgba(255, 255, 255, 0.1)';
-        this.style.backgroundColor = 'transparent';
-        
-        if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-            fileInput.files = e.dataTransfer.files;
-            fileInput.dispatchEvent(new Event('change'));
-        }
-    });
-}
-
-// Styl dla loadera i poprawionej ikony uploadu
-const loaderStyle = document.createElement('style');
-loaderStyle.textContent = `
-.loader {
-    display: inline-block;
-    width: 16px;
-    height: 16px;
-    border: 2px solid rgba(255,255,255,.3);
-    border-radius: 50%;
-    border-top-color: #fff;
-    animation: spin 1s ease-in-out infinite;
-    margin-right: 8px;
-    vertical-align: middle;
-}
-
-.upload-icon {
-    background: transparent !important;
-    padding: 0 !important;
-}
-
-.upload-icon path {
-    stroke: var(--accent-yellow);
-    fill: none;
-}
-
-@keyframes spin {
-    to { transform: rotate(360deg); }
-}
-`;
-document.head.appendChild(loaderStyle);
