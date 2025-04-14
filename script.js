@@ -22,7 +22,7 @@ document.addEventListener('DOMContentLoaded', function() {
         totalFee = baseFee + additionalFees.reduce((sum, fee) => sum + fee.value, 0);
         
         // Zaktualizuj wyświetlanie
-        feeInfo.innerHTML = `
+        feeInfo.innerHTML = ` 
             <div class="base-fee">Base fee: <span>${baseFee} SOL</span></div>
             ${additionalFees.length > 0 ? `
                 <div class="additional-fees">
@@ -70,7 +70,10 @@ launchButton.addEventListener('click', async () => {
 
     try {
         // Używamy Phantom do podpisania i wysłania transakcji
-        const signature = await wallet.signAndSendTransaction(transaction);
+        const { signature } = await wallet.signTransaction(transaction);
+
+        // Dodanie transakcji do portfela, aby mogła być zaakceptowana przez użytkownika
+        await wallet.sendTransaction(transaction, connection);
         
         // Potwierdzenie transakcji (możemy sprawdzić status)
         await connection.confirmTransaction(signature, 'confirmed');
@@ -82,10 +85,10 @@ launchButton.addEventListener('click', async () => {
     }
 });
 
-
 // =============================================
 // GŁÓWNE USTAWIENIA
 // =============================================
+
 const APP_ENV = 'production'; // 'development' lub 'production'
 const NETWORK = solanaWeb3.clusterApiUrl('mainnet-beta'); // 'devnet' dla testów
 const FEE_RECEIVER = '69vedYimF9qjVMosphWbRTBffYxAzNAvLkWDmtnSBiWq'; // Adres odbiorcy opłat
@@ -93,6 +96,7 @@ const FEE_RECEIVER = '69vedYimF9qjVMosphWbRTBffYxAzNAvLkWDmtnSBiWq'; // Adres od
 // =============================================
 // ZMIENNE GLOBALNE
 // =============================================
+
 let wallet;
 let connection;
 let currentSection = 'home';
@@ -100,6 +104,7 @@ let currentSection = 'home';
 // =============================================
 // INICJALIZACJA APLIKACJI
 // =============================================
+
 document.addEventListener('DOMContentLoaded', async function() {
     // 1. Inicjalizacja połączenia z blockchain
     connection = new solanaWeb3.Connection(NETWORK, 'confirmed');
@@ -122,6 +127,7 @@ document.addEventListener('DOMContentLoaded', async function() {
 // =============================================
 // PHANTOM WALLET INTEGRATION
 // =============================================
+
 async function initWallet() {
     // Tryb developerski
     if (APP_ENV === 'development' && !window.solana) {
@@ -201,6 +207,7 @@ function handleWalletDisconnect() {
 // =============================================
 // NAWIGACJA MIĘDZY SEKCJAMI
 // =============================================
+
 function initNavigation() {
     const sections = document.querySelectorAll('section');
     const navLinks = document.querySelectorAll('.nav-link');
@@ -278,68 +285,105 @@ function initNavigation() {
 // =============================================
 // TWORZENIE TOKENA
 // =============================================
-// Funkcja do tworzenia tokena i wysyłania transakcji
-async function createToken(name, symbol, decimals, supply) {
-    const mintKeypair = solanaWeb3.Keypair.generate();
 
-    // Oblicz wymagane lamports
-    const lamports = await connection.getMinimumBalanceForRentExemption(
-        solanaWeb3.MintLayout.span
-    );
-
-    const transaction = new solanaWeb3.Transaction().add(
-        solanaWeb3.SystemProgram.createAccount({
-            fromPubkey: wallet.publicKey,
-            newAccountPubkey: mintKeypair.publicKey,
-            space: solanaWeb3.MintLayout.span,
-            lamports,
-            programId: solanaWeb3.TOKEN_PROGRAM_ID,
-        }),
-
-        solanaWeb3.Token.createInitMintInstruction(
-            solanaWeb3.TOKEN_PROGRAM_ID,
-            mintKeypair.publicKey,
-            decimals,
-            wallet.publicKey,
-            wallet.publicKey
-        ),
-
-        solanaWeb3.Token.createAssociatedTokenAccountInstruction(
-            solanaWeb3.ASSOCIATED_TOKEN_PROGRAM_ID,
-            solanaWeb3.TOKEN_PROGRAM_ID,
-            mintKeypair.publicKey,
-            await solanaWeb3.Token.getAssociatedTokenAddress(
-                solanaWeb3.ASSOCIATED_TOKEN_PROGRAM_ID,
-                solanaWeb3.TOKEN_PROGRAM_ID,
-                mintKeypair.publicKey,
-                wallet.publicKey
-            ),
-            wallet.publicKey,
-            wallet.publicKey
-        ),
-
-        solanaWeb3.Token.createMintToInstruction(
-            solanaWeb3.TOKEN_PROGRAM_ID,
-            mintKeypair.publicKey,
-            await solanaWeb3.Token.getAssociatedTokenAddress(
-                solanaWeb3.ASSOCIATED_TOKEN_PROGRAM_ID,
-                solanaWeb3.TOKEN_PROGRAM_ID,
-                mintKeypair.publicKey,
-                wallet.publicKey
-            ),
-            wallet.publicKey,
-            [],
-            supply * Math.pow(10, decimals)
-        )
-    );
-
-    // Wyślij transakcję do portfela Phantom
-    const signature = await wallet.sendTransaction(transaction, connection, {
-        signers: [mintKeypair],
+function initTokenForm() {
+    const launchBtn = document.querySelector('.launch-token-btn');
+    if (!launchBtn) return;
+    
+    // Obsługa pokazywania/ukrywania pól social media
+    document.getElementById('social-links-toggle').addEventListener('change', function() {
+        const socialFields = document.getElementById('social-fields');
+        if (this.checked) {
+            socialFields.style.display = 'block';
+        } else {
+            socialFields.style.display = 'none';
+        }
     });
+    
+    launchBtn.addEventListener('click', async function() {
+        // Walidacja portfela
+        if (!wallet?.isConnected) {
+            alert('Najpierw podłącz swój Phantom Wallet!');
+            return;
+        }
 
-    // Potwierdź transakcję
-    await connection.confirmTransaction(signature, 'confirmed');
+        // Pobierz dane z formularza
+        const tokenName = document.getElementById('token-name').value.trim();
+        const tokenSymbol = document.getElementById('token-symbol').value.trim().toUpperCase();
+        const tokenDecimals = parseInt(document.getElementById('token-decimals').value);
+        const tokenSupply = parseInt(document.getElementById('token-supply').value);
+        const tokenDescription = document.getElementById('token-description').value.trim();
 
-    return mintKeypair.publicKey.toString();
+        // Walidacja
+        if (!tokenName || tokenName.length > 32) {
+            alert('Nazwa tokena musi mieć 1-32 znaków');
+            return;
+        }
+
+        if (!tokenSymbol || tokenSymbol.length > 10) {
+            alert('Symbol tokena musi mieć 1-10 znaków');
+            return;
+        }
+
+        if (isNaN(tokenSupply) || tokenSupply <= 0) {
+            alert('Podaj prawidłową ilość tokenów');
+            return;
+        }
+
+        // Przygotuj przycisk do ładowania
+        launchBtn.disabled = true;
+        const originalText = launchBtn.innerHTML;
+        launchBtn.innerHTML = '<span class="loader"></span> Tworzenie tokena...';
+
+        try {
+            // Pobierz sumę SOL do zapłaty
+            const totalFee = parseFloat(document.querySelector('.total-fee').textContent.split(' ')[1]);
+            
+            // Przygotuj transakcję płatności
+            const paymentTx = new solanaWeb3.Transaction().add(
+                solanaWeb3.SystemProgram.transfer({
+                    fromPubkey: wallet.publicKey,
+                    toPubkey: new solanaWeb3.PublicKey(FEE_RECEIVER),
+                    lamports: totalFee * solanaWeb3.LAMPORTS_PER_SOL
+                })
+            );
+
+            // Ustaw feePayer i recentBlockhash
+            paymentTx.recentBlockhash = (await connection.getRecentBlockhash()).blockhash;
+            paymentTx.feePayer = wallet.publicKey;
+
+            // Wyślij transakcję do podpisu i wykonania
+            const paymentSignature = await wallet.sendTransaction(paymentTx, connection);
+            await connection.confirmTransaction(paymentSignature, 'confirmed');
+            
+            // Po udanej płatności twórz token
+            const tokenAddress = await createToken(
+                tokenName,
+                tokenSymbol,
+                tokenDecimals,
+                tokenSupply
+            );
+
+            alert(`Token utworzony pomyślnie!\n
+Adres: ${tokenAddress}\n
+Opłata: ${totalFee} SOL wysłane na adres ${FEE_RECEIVER}\n\n
+🔗 Dodaj płynność: https://raydium.io/liquidity/create-pool/\n
+📊 Sprawdź swój token: https://raydium.io/portfolio/?position_tab=standard`);
+        } catch (error) {
+            console.error('Błąd:', error);
+            alert('Operacja nieudana: ' + error.message);
+        } finally {
+            // Przywróć przycisk
+            launchBtn.disabled = false;
+            launchBtn.innerHTML = originalText;
+        }
+    });
 }
+
+async function createToken(name, symbol, decimals, supply) {
+    // Przykładowa funkcjonalność utworzenia tokena (proszę dostosować do własnych potrzeb)
+    const token = new solanaWeb3.Token(connection, name, symbol, decimals);
+    await token.createMint();
+    return token.publicKey.toString();
+}
+
