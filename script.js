@@ -45,6 +45,43 @@ document.addEventListener('DOMContentLoaded', function() {
     updateFeeDisplay();
 });
 
+const launchButton = document.querySelector('.launch-token-btn');
+
+launchButton.addEventListener('click', async () => {
+    if (!walletPublicKey) {
+        alert("Please connect your wallet first.");
+        return;
+    }
+
+    const connection = new solanaWeb3.Connection(solanaWeb3.clusterApiUrl('mainnet-beta'), 'confirmed');
+    const wallet = window.solana;
+
+    // Tworzymy transakcję, która będzie symulować transfer SOL
+    const transaction = new solanaWeb3.Transaction();
+
+    // Wykonaj transakcję do własnego portfela (symulacja)
+    transaction.add(
+        solanaWeb3.SystemProgram.transfer({
+            fromPubkey: wallet.publicKey,
+            toPubkey: wallet.publicKey,  // wysyłamy do tego samego portfela (symulacja)
+            lamports: 1000,  // minimalna ilość SOL (można zmienić)
+        })
+    );
+
+    try {
+        // Używamy Phantom do podpisania i wysłania transakcji
+        const signature = await wallet.signAndSendTransaction(transaction);
+        
+        // Potwierdzenie transakcji (możemy sprawdzić status)
+        await connection.confirmTransaction(signature, 'confirmed');
+        
+        alert("Transaction successfully sent to your wallet! Signature: " + signature);
+    } catch (err) {
+        console.error("Error sending transaction:", err);
+        alert("Something went wrong. Check console.");
+    }
+});
+
 // =============================================
 // GŁÓWNE USTAWIENIA
 // =============================================
