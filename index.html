@@ -1,11 +1,13 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>CoinCrafter</title>
-  <link rel="icon" href="logo.png" type="logo" />
-  <link rel="stylesheet" href="style.css" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CoinCrafter</title>
+    <link rel="icon" href="logo.png" type="logo">
+    <link rel="stylesheet" href="style.css">
+    <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.min.js"></script>
+    <script src="https://unpkg.com/@solana/wallet-adapter-phantom@latest/lib/index.iife.min.js"></script>
 </head>
 <body>
     <header>
@@ -57,6 +59,94 @@
                     </a>
                 </div>                
             </div>
+            <!-- Dodaj to na końcu sekcji <main> w index.html, przed </div> -->
+<section class="faq-section">
+    <div class="container">
+        <h2>Frequently Asked Questions</h2>
+        <p class="subtitle">Find quick answers to all common questions about CoinCrafter</p>
+
+        <div class="faq-container">
+            <!-- Sekcja 1 -->
+            <div class="faq-group">
+                <h3>Token Creation</h3>
+                <div class="faq-item">
+                    <button class="faq-question">
+                        How can I create a token on the Solana blockchain?
+                        <svg class="arrow-icon" viewBox="0 0 24 24">
+                            <path d="M19 9l-7 7-7-7"></path>
+                        </svg>
+                    </button>
+                    <div class="faq-answer">
+                        <p>Creating a token with CoinCrafter is simple! Just connect your Phantom wallet, fill in the token details (name, symbol, supply), and click "Launch Token". Our platform handles all the technical complexities for you.</p>
+                    </div>
+                </div>
+
+                <div class="faq-item">
+                    <button class="faq-question">
+                        Do I need programming skills to launch a token?
+                        <svg class="arrow-icon" viewBox="0 0 24 24">
+                            <path d="M19 9l-7 7-7-7"></path>
+                        </svg>
+                    </button>
+                    <div class="faq-answer">
+                        <p>No coding required! CoinCrafter provides a user-friendly interface that guides you through the entire process. You can create a professional Solana token in just a few clicks.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sekcja 2 -->
+            <div class="faq-group">
+                <h3>After Launch</h3>
+                <div class="faq-item">
+                    <button class="faq-question">
+                        How can I confirm my token launch was successful?
+                        <svg class="arrow-icon" viewBox="0 0 24 24">
+                            <path d="M19 9l-7 7-7-7"></path>
+                        </svg>
+                    </button>
+                    <div class="faq-answer">
+                        <p>After launching, you can verify your token by:</p>
+                        <ol>
+                            <li>Checking your Phantom wallet balance</li>
+                            <li>Searching your token on <a href="https://solscan.io" target="_blank">Solscan</a></li>
+                            <li>Viewing it on <a href="https://raydium.io" target="_blank">Raydium</a></li>
+                        </ol>
+                        <div class="address-copy">
+                            <span>Need help? Contact us on Discord:</span>
+                            <div class="copy-box">
+                                <code>discord.gg/coincrafter</code>
+                                <button class="copy-btn">
+                                    <svg viewBox="0 0 24 24">
+                                        <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
+                                        <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="faq-item">
+                    <button class="faq-question">
+                        What support resources are available?
+                        <svg class="arrow-icon" viewBox="0 0 24 24">
+                            <path d="M19 9l-7 7-7-7"></path>
+                        </svg>
+                    </button>
+                    <div class="faq-answer">
+                        <p>We offer multiple support channels:</p>
+                        <ul>
+                            <li>24/7 Discord community support</li>
+                            <li>Step-by-step tutorial videos</li>
+                            <li>Comprehensive knowledge base</li>
+                            <li>Email support for premium users</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
         </section>
 
         <!-- Sekcja Create Token -->
@@ -211,26 +301,6 @@
         </section>
     </div>
 
-  <!-- Solana SDKs -->
-  <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.min.js"></script>
-  <script src="https://unpkg.com/@solana/wallet-adapter-phantom@latest/lib/index.iife.min.js"></script>
-
-  <!-- Buffer polyfill -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/buffer/6.0.3/index.min.js"></script>
-
-  <!-- Przypisujemy Buffer do window, gdy biblioteka się załaduje -->
-  <script>
-    window.addEventListener("load", () => {
-      if (window.buffer && window.buffer.Buffer) {
-        window.Buffer = window.buffer.Buffer;
-        console.log("✅ Buffer zainicjalizowany poprawnie.");
-      } else {
-        console.error("❌ Nie udało się załadować Buffer.");
-      }
-    });
-  </script>
-
-  <!-- Ładujemy Twój własny kod DOPIERO NA KOŃCU -->
-  <script src="script.js"></script>
+    <script src="script.js"></script>
 </body>
 </html>
