@@ -153,15 +153,13 @@ nav {
 }
 
 .main-content {
-    width: 100%;
-    margin-top: 80px;
+    min-height: 100vh; /* Upewnij się, że to masz */
+    position: relative;
 }
 
-/* Sekcja Home */
 #home {
     position: relative;
     width: 100%;
-    height: 100vh;
     min-height: 600px;
     overflow: hidden;
     background: linear-gradient(135deg, #0F2027 0%, #203A43 50%, #2C5364 100%);
@@ -292,6 +290,164 @@ nav {
     transition: transform 0.3s ease;
 }
 
+/* FAQ Section */
+.faq-section {
+    background: var(--header-bg);
+    border-radius: 12px;
+    padding: 2.5rem;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 215, 0, 0.2);
+    position: relative; /* Dodaj to */
+    z-index: 1; /* Dodaj to */
+    margin-top: -1px; /* Zapobiega przerwom w tle */
+}
+
+.faq-section .container {
+    max-width: 1000px;
+    margin: 0 auto;
+}
+
+.faq-section h2 {
+    text-align: center;
+    font-size: 2.5rem;
+    margin-bottom: 1rem;
+    color: var(--accent-yellow);
+}
+
+.faq-section .subtitle {
+    text-align: center;
+    color: rgba(255, 255, 255, 0.8);
+    margin-bottom: 3rem;
+    font-size: 1.1rem;
+}
+
+.faq-group h3 {
+    font-size: 1.5rem;
+    margin: 2rem 0 1rem;
+    color: var(--accent-yellow);
+    padding-left: 1rem;
+    border-left: 3px solid var(--accent-yellow);
+}
+
+.faq-item {
+    margin-bottom: 1rem;
+    border-radius: 8px;
+    overflow: hidden;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 215, 0, 0.1);
+}
+
+.faq-question {
+    width: 100%;
+    padding: 1.2rem 1.5rem;
+    text-align: left;
+    background: transparent;
+    border: none;
+    color: white;
+    font-size: 1.1rem;
+    font-weight: 500;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.faq-question:hover {
+    background: rgba(255, 215, 0, 0.05);
+}
+
+.faq-question .arrow-icon {
+    width: 20px;
+    height: 20px;
+    stroke: var(--accent-yellow);
+    transition: transform 0.3s ease;
+}
+
+.faq-question[aria-expanded="true"] .arrow-icon {
+    transform: rotate(180deg);
+}
+
+.faq-answer {
+    padding: 0 1.5rem;
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease, padding 0.3s ease;
+}
+
+.faq-answer[aria-hidden="false"] {
+    padding: 0 1.5rem 1.5rem;
+    max-height: 500px;
+}
+
+.faq-answer p, .faq-answer ol, .faq-answer ul {
+    margin-bottom: 1rem;
+    line-height: 1.6;
+}
+
+.faq-answer a {
+    color: var(--accent-yellow);
+    text-decoration: none;
+}
+
+.faq-answer a:hover {
+    text-decoration: underline;
+}
+
+.address-copy {
+    margin-top: 1.5rem;
+    padding: 1rem;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 8px;
+}
+
+.copy-box {
+    display: flex;
+    align-items: center;
+    background: rgba(0, 0, 0, 0.3);
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    margin-top: 0.5rem;
+}
+
+.copy-box code {
+    flex-grow: 1;
+    font-family: monospace;
+    color: var(--accent-yellow);
+}
+
+.copy-btn {
+    background: transparent;
+    border: none;
+    color: white;
+    cursor: pointer;
+    padding: 0.5rem;
+    margin-left: 0.5rem;
+}
+
+.copy-btn svg {
+    width: 18px;
+    height: 18px;
+    stroke: currentColor;
+}
+
+.copy-btn:hover {
+    color: var(--accent-yellow);
+}
+
+/* Naprawa potencjalnych problemów z nakładaniem się */
+.hidden-section {
+    display: none !important;
+}
+
+.active-section {
+    display: block;
+}
+
+.faq-section {
+    display: block !important; /* Wymusza pokazanie FAQ */
+}
+
 /* Sekcja Create Token */
 .token-form-container {
     max-width: 1200px;
@@ -399,13 +555,13 @@ input:focus, select:focus, textarea:focus {
     stroke: var(--accent-yellow);
     margin-bottom: 1rem;
     opacity: 0.7;
-    background: transparent !important;
-    fill: none;
-    padding: 0;
+    background: transparent !important; /* Usuwa czarne tło */
+    padding: 0 !important;
 }
 
 .upload-icon path {
-    stroke-width: 1.5;
+    stroke: var(--accent-yellow); /* Zostawiamy tylko kontur */
+    fill: none; /* Usuwamy wypełnienie */
 }
 
 .file-requirements {
