@@ -9,6 +9,7 @@
     --accent-yellow-dark: #FFA000;
     --form-bg: #252525;
     --form-border: rgba(255, 255, 255, 0.1);
+    --footer-bg: #0D0D0D;
 }
 
 * {
@@ -153,7 +154,7 @@ nav {
 }
 
 .main-content {
-    min-height: 100vh; /* Upewnij się, że to masz */
+    min-height: 100vh;
     position: relative;
 }
 
@@ -290,6 +291,155 @@ nav {
     transition: transform 0.3s ease;
 }
 
+.stats-container {
+    display: flex;
+    gap: 2rem;
+    justify-content: center;
+    margin-top: 1.5rem;
+    flex-wrap: wrap;
+}
+
+.token-counter {
+    background: rgba(255, 215, 0, 0.1);
+    padding: 0.8rem 1.5rem;
+    border-radius: 50px;
+    font-weight: 500;
+    border: 1px solid rgba(255, 215, 0, 0.2);
+    font-size: 0.9rem;
+}
+
+.token-counter span {
+    color: var(--accent-yellow);
+    font-weight: 700;
+}
+
+/* Nowe style dla animacji licznika */
+.token-counter {
+    position: relative;
+}
+
+.token-counter::after {
+    content: " and counting!";
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.token-counter.animate-counting::after {
+    opacity: 1;
+    animation: fadeInCounting 0.5s ease;
+}
+
+@keyframes fadeInCounting {
+    from { opacity: 0; transform: translateY(5px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes countUp {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.token-counter span {
+    display: inline-block;
+    animation: countUp 0.5s ease forwards;
+}
+
+/* Reszta Twojego oryginalnego kodu pozostaje bez zmian */
+/* ... (tutaj wklej resztę swojego oryginalnego CSS) ... */
+
+/* Style dla sekcji referral */
+.referral-section {
+    max-width: 800px;
+    margin: 3rem auto;
+    padding: 0 1rem;
+}
+
+.referral-card {
+    background: linear-gradient(135deg, rgba(153, 69, 255, 0.1) 0%, rgba(20, 241, 149, 0.1) 100%);
+    border-radius: 12px;
+    padding: 2rem;
+    text-align: center;
+    border: 1px solid rgba(255, 215, 0, 0.2);
+}
+
+.referral-input {
+    display: flex;
+    margin: 1.5rem 0;
+}
+
+.referral-input input {
+    flex: 1;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid var(--accent-yellow);
+    color: white;
+    padding: 0.8rem;
+    border-radius: 8px 0 0 8px;
+    font-family: monospace;
+}
+
+.referral-input button {
+    background: var(--accent-yellow);
+    color: black;
+    border: none;
+    padding: 0 1.2rem;
+    border-radius: 0 8px 8px 0;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.referral-input button:hover {
+    background: var(--accent-yellow-dark);
+}
+
+.referral-stats {
+    display: flex;
+    justify-content: center;
+    gap: 2rem;
+    margin-top: 1rem;
+}
+
+.referral-stats div {
+    background: rgba(0, 0, 0, 0.2);
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    font-size: 0.9rem;
+}
+
+.referral-stats span {
+    color: var(--accent-yellow);
+    font-weight: 600;
+}
+
+/* Lazy loading dla obrazków */
+[loading="lazy"] {
+    transition: opacity 0.3s;
+    opacity: 0;
+}
+
+[loading="lazy"].loaded {
+    opacity: 1;
+}
+
+/* Responsywność */
+@media (max-width: 768px) {
+    .stats-container {
+        flex-direction: column;
+        gap: 1rem;
+        align-items: center;
+    }
+    
+    .referral-stats {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
+    .token-counter, .sol-balance {
+        padding: 0.6rem 1rem;
+        font-size: 0.8rem;
+    }
+}
+
+
 /* FAQ Section */
 .faq-section {
     background: var(--header-bg);
@@ -297,9 +447,9 @@ nav {
     padding: 2.5rem;
     box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
     border: 1px solid rgba(255, 215, 0, 0.2);
-    position: relative; /* Dodaj to */
-    z-index: 1; /* Dodaj to */
-    margin-top: -1px; /* Zapobiega przerwom w tle */
+    position: relative;
+    z-index: 1;
+    margin-top: -1px;
 }
 
 .faq-section .container {
@@ -361,7 +511,7 @@ nav {
     width: 20px;
     height: 20px;
     stroke: var(--accent-yellow);
-    transition: transform 0.3s ease;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); /* Ta sama krzywa animacji */
 }
 
 .faq-question[aria-expanded="true"] .arrow-icon {
@@ -369,15 +519,16 @@ nav {
 }
 
 .faq-answer {
-    padding: 0 1.5rem;
     max-height: 0;
     overflow: hidden;
-    transition: max-height 0.3s ease, padding 0.3s ease;
+    transition: max-height 0.5s cubic-bezier(0.4, 0, 0.2, 1), padding 0.3s ease; /* Dodaj płynną krzywą animacji */
+    padding: 0 1.5rem;
+    will-change: max-height; /* Optymalizacja dla przeglądarek */
 }
 
 .faq-answer[aria-hidden="false"] {
     padding: 0 1.5rem 1.5rem;
-    max-height: 500px;
+    max-height: 500px; /* Wartość większa niż maksymalna przewidywana wysokość */
 }
 
 .faq-answer p, .faq-answer ol, .faq-answer ul {
@@ -392,6 +543,15 @@ nav {
 
 .faq-answer a:hover {
     text-decoration: underline;
+}
+
+.faq-item.active .faq-answer {
+    max-height: 500px;
+    padding: 0 1.5rem 1.5rem;
+}
+
+.faq-item.active .faq-question .arrow-icon {
+    transform: rotate(180deg);
 }
 
 .address-copy {
@@ -445,7 +605,7 @@ nav {
 }
 
 .faq-section {
-    display: block !important; /* Wymusza pokazanie FAQ */
+    display: block !important;
 }
 
 /* Sekcja Create Token */
@@ -555,13 +715,13 @@ input:focus, select:focus, textarea:focus {
     stroke: var(--accent-yellow);
     margin-bottom: 1rem;
     opacity: 0.7;
-    background: transparent !important; /* Usuwa czarne tło */
+    background: transparent !important;
     padding: 0 !important;
 }
 
 .upload-icon path {
-    stroke: var(--accent-yellow); /* Zostawiamy tylko kontur */
-    fill: none; /* Usuwamy wypełnienie */
+    stroke: var(--accent-yellow);
+    fill: none;
 }
 
 .file-requirements {
@@ -874,6 +1034,71 @@ input[type="checkbox"]:checked ~ .revoke-checkbox::after {
     font-weight: 600;
 }
 
+/* Nowe style dla footera */
+.site-footer {
+    background-color: var(--footer-bg);
+    color: var(--text-light);
+    padding: 3rem 0 0;
+    border-top: 1px solid rgba(255, 215, 0, 0.1);
+}
+
+.footer-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 2rem;
+    display: grid;
+    grid-template-columns: 1fr 2fr;
+    gap: 3rem;
+}
+
+.footer-logo {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+}
+
+.footer-logo img {
+    height: 50px;
+    margin-bottom: 1rem;
+}
+
+.footer-links {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 2rem;
+}
+
+.footer-column {
+    display: flex;
+    flex-direction: column;
+}
+
+.footer-column h3 {
+    color: var(--accent-yellow);
+    margin-bottom: 1.5rem;
+    font-size: 1.1rem;
+}
+
+.footer-column a {
+    color: var(--text-muted);
+    margin-bottom: 0.8rem;
+    text-decoration: none;
+    transition: color 0.3s ease;
+}
+
+.footer-column a:hover {
+    color: var(--accent-yellow);
+}
+
+.footer-bottom {
+    text-align: center;
+    padding: 1.5rem 0;
+    margin-top: 3rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    color: var(--text-muted);
+    font-size: 0.9rem;
+}
+
 /* Responsywność */
 @media (max-width: 1200px) {
     .main-headline {
@@ -926,6 +1151,14 @@ input[type="checkbox"]:checked ~ .revoke-checkbox::after {
     
     .social-field-group input {
         width: 90%;
+    }
+    
+    .footer-container {
+        grid-template-columns: 1fr;
+    }
+    
+    .footer-links {
+        grid-template-columns: 1fr;
     }
 }
 
