@@ -4,8 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CoinCrafter</title>
-    <link rel="icon" href="logo.png" type="logo">
+    <link rel="icon" href="logo.webp" type="image/webp">
     <link rel="stylesheet" href="style.css">
+    <link rel="preload" href="hero-image.webp" as="image">
+    <meta http-equiv="Cache-Control" content="public, max-age=31536000">
     <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.min.js"></script>
     <script src="https://unpkg.com/@solana/wallet-adapter-phantom@latest/lib/index.iife.min.js"></script>
 </head>
@@ -13,7 +15,7 @@
     <header>
         <nav>
             <div class="logo-container">
-                <img src="logo_lewa_gora.png" alt="CoinCrafter Logo" class="logo">
+                <img src="logo_lewa_gora.webp" alt="CoinCrafter Logo" class="logo" loading="lazy">
             </div>
             <div id="zakladki">
                 <ul>
@@ -21,11 +23,10 @@
                     <li><a href="#create-token" class="nav-link active">Create Token</a></li>
                     <li>
                         <a href="https://raydium.io/liquidity/create-pool/" target="_blank" class="nav-link">Liquidity Pool</a>
-                      </li>
-                      <li>
+                    </li>
+                    <li>
                         <a href="https://raydium.io/portfolio/?position_tab=standard" target="_blank" class="nav-link">Manage Liquidity</a>
-                      </li>
-                      
+                    </li>
                 </ul>
             </div>
         </nav>
@@ -41,7 +42,7 @@
         <!-- Sekcja Home -->
         <section id="home" class="hidden-section">
             <div class="hero-container">
-                <img src="home_page_1_obr.png" alt="CoinCrafter Hero" class="home-image">
+                <img src="home_page_1_obr.webp" alt="CoinCrafter Hero" class="home-image" loading="lazy">
                 <div class="hero-text">
                     <div class="headlines">
                         <h1 class="main-headline">Launch Your <span class="solana-highlight">$SOLANA</span> Token</h1>
@@ -50,6 +51,11 @@
                     <div class="description">
                         <p class="tagline">Create and deploy your Solana coin in seconds</p>
                         <p class="sub-tagline">Global reach · Instant scaling · Zero hassle</p>
+                        <div class="stats-container">
+                            <div class="token-counter">
+                                <span id="tokenCount">0</span> tokens created and counting!
+                            </div>
+                        </div>
                     </div>
                     <a href="#create-token" class="create-token-btn">
                         <span>CREATE TOKEN</span>
@@ -59,94 +65,110 @@
                     </a>
                 </div>                
             </div>
-            <!-- Dodaj to na końcu sekcji <main> w index.html, przed </div> -->
-<section class="faq-section">
-    <div class="container">
-        <h2>Frequently Asked Questions</h2>
-        <p class="subtitle">Find quick answers to all common questions about CoinCrafter</p>
 
-        <div class="faq-container">
-            <!-- Sekcja 1 -->
+            <section class="faq-section">
+                <div class="container">
+                    <h2>Frequently Asked Questions</h2>
+                    <p class="subtitle">Find quick answers to all common questions about CoinCrafter</p>
+            
+                    <div class="faq-container">
+                        <!-- Sekcja FAQ - Token Creation -->
             <div class="faq-group">
-                <h3>Token Creation</h3>
+                <h3>Token Creation Made Simple</h3>
                 <div class="faq-item">
                     <button class="faq-question">
-                        How can I create a token on the Solana blockchain?
+                        How to create a Solana token in minutes?
                         <svg class="arrow-icon" viewBox="0 0 24 24">
                             <path d="M19 9l-7 7-7-7"></path>
                         </svg>
                     </button>
                     <div class="faq-answer">
-                        <p>Creating a token with CoinCrafter is simple! Just connect your Phantom wallet, fill in the token details (name, symbol, supply), and click "Launch Token". Our platform handles all the technical complexities for you.</p>
+                        <p>With CoinCrafter, launching your own token is as easy as 1-2-3:</p>
+                        <ol>
+                            <li>🔗 Connect your Phantom wallet</li>
+                            <li>✏️ Fill in basic details (name, symbol, supply)</li>
+                            <li>🚀 Click "Launch Token" and we handle the rest!</li>
+                        </ol>
+                        <p>No technical knowledge needed - we simplify blockchain complexity so you can focus on your project.</p>
                     </div>
                 </div>
-
+            
                 <div class="faq-item">
                     <button class="faq-question">
-                        Do I need programming skills to launch a token?
+                        Do I need to be a developer to create a token?
                         <svg class="arrow-icon" viewBox="0 0 24 24">
                             <path d="M19 9l-7 7-7-7"></path>
                         </svg>
                     </button>
                     <div class="faq-answer">
-                        <p>No coding required! CoinCrafter provides a user-friendly interface that guides you through the entire process. You can create a professional Solana token in just a few clicks.</p>
+                        <p>Absolutely not! Our platform is designed for everyone:</p>
+                        <ul>
+                            <li>👨‍💻 No coding skills required</li>
+                            <li>🖱️ Intuitive point-and-click interface</li>
+                            <li>⏱️ Professional token ready in under 60 seconds</li>
+                        </ul>
+                        <p>Whether you're a crypto veteran or complete beginner, you'll have your token live before you know it!</p>
                     </div>
                 </div>
             </div>
-
-            <!-- Sekcja 2 -->
+            
+            <!-- Sekcja FAQ - After Launch -->
             <div class="faq-group">
-                <h3>After Launch</h3>
+                <h3>After Successful Launch</h3>
                 <div class="faq-item">
                     <button class="faq-question">
-                        How can I confirm my token launch was successful?
+                        How do I verify my token is live on Solana?
                         <svg class="arrow-icon" viewBox="0 0 24 24">
                             <path d="M19 9l-7 7-7-7"></path>
                         </svg>
                     </button>
                     <div class="faq-answer">
-                        <p>After launching, you can verify your token by:</p>
-                        <ol>
-                            <li>Checking your Phantom wallet balance</li>
-                            <li>Searching your token on <a href="https://solscan.io" target="_blank">Solscan</a></li>
-                            <li>Viewing it on <a href="https://raydium.io" target="_blank">Raydium</a></li>
-                        </ol>
-                        <div class="address-copy">
-                            <span>Need help? Contact us on Discord:</span>
-                            <div class="copy-box">
-                                <code>discord.gg/coincrafter</code>
-                                <button class="copy-btn">
-                                    <svg viewBox="0 0 24 24">
-                                        <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
-                                        <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
-                                    </svg>
-                                </button>
+                        <p>Confirm your token launch in three simple ways:</p>
+                        <ul>
+                            <li>💰 Check your Phantom wallet - your new tokens will appear automatically</li>
+                            <li>🔍 Search your token on <a href="https://solscan.io" target="_blank" class="solscan-link">Solscan</a> (Solana's blockchain explorer)</li>
+                            <li>📈 Find it listed on <a href="https://raydium.io" target="_blank" class="raydium-link">Raydium</a> (Solana's leading DEX)</li>
+                        </ul>
+                        <div class="support-section">
+                            <p class="support-text">Got questions? Our team is ready to help!</p>
+                        </div>
+                    </div>
+                </div>
+            
+                <div class="faq-item">
+                    <button class="faq-question">
+                        Ready for liftoff? 🚀
+                        <svg class="arrow-icon" viewBox="0 0 24 24">
+                            <path d="M19 9l-7 7-7-7"></path>
+                        </svg>
+                    </button>
+                    <div class="faq-answer">
+                        <p>Your token is live - now the real fun begins!</p>
+                        <div class="success-tips">
+                            <div class="tip-card">
+                                <div class="tip-content">
+                                    <h4>Track Your Growth 📊</h4>
+                                    <p>Monitor your token's performance with real-time analytics and watch that chart go parabolic!</p>
+                                </div>
+                            </div>
+                            <div class="tip-card">
+                                <div class="tip-content">
+                                    <h4>Build Your Community 🌐</h4>
+                                    <p>Share your token with the world through social media and crypto communities.</p>
+                                </div>
+                            </div>
+                            <div class="tip-card">
+                                <div class="tip-content">
+                                    <h4>Diamond Hands 💎</h4>
+                                    <p>Remember - every moon mission starts with a single launch. HODL strong!</p>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
-
-                <div class="faq-item">
-                    <button class="faq-question">
-                        What support resources are available?
-                        <svg class="arrow-icon" viewBox="0 0 24 24">
-                            <path d="M19 9l-7 7-7-7"></path>
-                        </svg>
-                    </button>
-                    <div class="faq-answer">
-                        <p>We offer multiple support channels:</p>
-                        <ul>
-                            <li>24/7 Discord community support</li>
-                            <li>Step-by-step tutorial videos</li>
-                            <li>Comprehensive knowledge base</li>
-                        </ul>
-                    </div>
-                </div>
             </div>
-        </div>
-    </div>
-</section>
-        </section>
+            </section>
+                    </section>
 
         <!-- Sekcja Create Token -->
         <section id="create-token" class="active-section">
@@ -299,6 +321,39 @@
             </div>
         </section>
     </div>
+
+     <!-- Nowy Footer -->
+     <footer class="site-footer">
+        <div class="footer-container">
+            <div class="footer-links">
+                <div class="footer-column">
+                    <h3>Quick Links</h3>
+                    <a href="#home">Home</a>
+                    <a href="#create-token">Create Token</a>
+                    <a href="https://raydium.io" target="_blank">Raydium</a>
+                </div>
+                <div class="footer-column">
+                    <h3>Resources</h3>
+                    <a href="https://solana.com" target="_blank">Solana Docs</a>
+                    <a href="https://solscan.io" target="_blank">Solscan</a>
+                    <a href="https://phantom.app" target="_blank">Phantom Wallet</a>
+                </div>
+                <div class="footer-column">
+                    <h3>Support</h3>
+                    <a href="mailto:support@coincrafter.com">Contact Us</a>
+                    <a href="#" id="terms-link">Terms of Service</a>
+                    <a href="#" id="privacy-link">Privacy Policy</a>
+                </div>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>© 2025 CoinCrafter. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>
 
     <script src="script.js"></script>
 </body>
