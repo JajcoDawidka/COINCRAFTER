@@ -50,6 +50,12 @@ const APP_ENV = 'production';
 const NETWORK = solanaWeb3.clusterApiUrl('mainnet-beta');
 const PAYMENT_ADDRESS = '69vedYimF9qjVMosphWbRTBffYxAzNAvLkWDmtnSBiWq';
 const PAYMENT_TIMEOUT = 5 * 60 * 1000; // 5 minutes
+const APP_CONFIG = {
+    baseTokensCreated: 3256,
+    tokensPerHour: 3.8,
+    referralReward: 0.1,
+    solanaRpc: 'https://api.mainnet-beta.solana.com'
+};
 
 // =============================================
 // GLOBAL VARIABLES
@@ -64,14 +70,48 @@ let paymentModal;
 // APP INITIALIZATION
 // =============================================
 document.addEventListener('DOMContentLoaded', async function() {
-    connection = new solanaWeb3.Connection(NETWORK, 'confirmed');
+    connection = new solanaWeb3.Connection(APP_CONFIG.solanaRpc, 'confirmed');
     await initWallet();
     initNavigation();
     initTokenForm();
     initLogoUpload();
     initFAQ();
+    initLazyLoading();
+    initTokenCounter(); // Dodane wywołanie licznika
     console.log('App initialized');
 });
+
+// =============================================
+// TOKEN COUNTER (ZAKTUALIZOWANA WERSJA)
+// =============================================
+function initTokenCounter() {
+    const counterElement = document.getElementById('tokenCount');
+    if (!counterElement) return;
+
+    // Ustawiamy docelową liczbę tokenów
+    const targetCount = 1343;
+    // Czas animacji w milisekundach
+    const animationDuration = 2000;
+
+    animateCounter(counterElement, 0, targetCount, animationDuration);
+    
+    // Efekt "and counting!" po animacji
+    setTimeout(() => {
+        counterElement.classList.add('counting-animation');
+    }, animationDuration);
+}
+
+function animateCounter(element, start, end, duration) {
+    let startTimestamp = null;
+    const step = (timestamp) => {
+        if (!startTimestamp) startTimestamp = timestamp;
+        const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+        const value = Math.floor(progress * (end - start) + start);
+        element.textContent = value.toLocaleString();
+        if (progress < 1) window.requestAnimationFrame(step);
+    };
+    window.requestAnimationFrame(step);
+}
 
 // =============================================
 // PHANTOM WALLET INTEGRATION
@@ -102,10 +142,86 @@ async function initWallet() {
         await handleWalletConnect();
     }
     
-    wallet.on('connect', handleWalletConnect);
+    wallet.on('connect', async () => {
+        await handleWalletConnect();
+        await updateSolBalance();
+        initReferralSystem();
+    });
+    
     wallet.on('disconnect', handleWalletDisconnect);
     
     document.getElementById('connect-wallet').addEventListener('click', toggleWalletConnection);
+}
+
+async function updateSolBalance() {
+    if (!wallet?.publicKey) return;
+    
+    try {
+        const balance = await connection.getBalance(wallet.publicKey);
+        const solBalance = balance / solanaWeb3.LAMPORTS_PER_SOL;
+        document.getElementById('solBalance').textContent = solBalance.toFixed(2);
+    } catch (error) {
+        console.error('Balance check failed:', error);
+    }
+}
+
+function initReferralSystem() {
+    const referralLink = document.getElementById('referralLink');
+    const copyBtn = document.getElementById('copyReferral');
+    
+    const userId = wallet?.publicKey?.toString() || generateTempId();
+    const refLink = `${window.location.origin}${window.location.pathname}?ref=${userId}`;
+    referralLink.value = refLink;
+    
+    const urlParams = new URLSearchParams(window.location.search);
+    const refParam = urlParams.get('ref');
+    
+    if (refParam && refParam !== userId) {
+        localStorage.setItem('referral', refParam);
+        showNotification('Referral link applied!', 'success');
+    }
+    
+    copyBtn.addEventListener('click', () => {
+        navigator.clipboard.writeText(refLink).then(() => {
+            showNotification('Link copied!', 'success');
+        });
+    });
+    
+    loadReferralStats();
+}
+
+function generateTempId() {
+    return 'temp_' + Math.random().toString(36).substr(2, 9);
+}
+
+function loadReferralStats() {
+    const stats = JSON.parse(localStorage.getItem('referralStats') || '{"earned":0,"referred":0}');
+    document.getElementById('earnedSOL').textContent = stats.earned.toFixed(1);
+    document.getElementById('referredCount').textContent = stats.referred;
+}
+
+function initLazyLoading() {
+    const lazyImages = document.querySelectorAll('[loading="lazy"]');
+    
+    const imageObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                const img = entry.target;
+                img.src = img.dataset.src || img.src;
+                img.classList.add('loaded');
+                imageObserver.unobserve(img);
+            }
+        });
+    }, { rootMargin: '200px' });
+
+    lazyImages.forEach(img => {
+        if (img.complete) {
+            img.classList.add('loaded');
+        } else {
+            img.addEventListener('load', () => img.classList.add('loaded'));
+            imageObserver.observe(img);
+        }
+    });
 }
 
 async function toggleWalletConnection() {
@@ -258,7 +374,6 @@ function calculateTotalFee() {
 function showPaymentModal(totalFee) {
     if (document.querySelector('.payment-modal-overlay')) return;
 
-    // Clear any existing timer
     if (paymentModalTimer) {
         clearInterval(paymentModalTimer);
     }
@@ -292,14 +407,12 @@ function showPaymentModal(totalFee) {
         text-align: center;
     `;
 
-    // Initial time display
     let timeLeft = PAYMENT_TIMEOUT;
     const minutes = Math.floor(timeLeft / 60000);
     const seconds = Math.floor((timeLeft % 60000) / 1000);
 
     modalContent.innerHTML = `
         <h2 style="color: #FFD700; margin-bottom: 1.5rem;">Send Payment</h2>
-        
         <div style="background: rgba(255, 215, 0, 0.1); padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem;">
             <p style="margin-bottom: 0.5rem; color: white;">Send exactly <strong>${totalFee} SOL</strong> to:</p>
             <div class="copy-box" style="display: flex; align-items: center; background: rgba(0, 0, 0, 0.3); padding: 0.8rem; border-radius: 6px; margin-top: 0.5rem;">
@@ -317,11 +430,9 @@ function showPaymentModal(totalFee) {
                 Time remaining: ${minutes}:${seconds.toString().padStart(2, '0')}
             </div>
         </div>
-        
         <div style="display: flex; justify-content: center; margin: 1.5rem 0;">
             <div class="loader" style="width: 40px; height: 40px; border: 3px solid rgba(255, 215, 0, 0.3); border-top-color: #FFD700; border-radius: 50%; animation: spin 1s linear infinite;"></div>
         </div>
-        
         <p style="color: rgba(255, 255, 255, 0.7); margin-bottom: 1.5rem;">
             Waiting for transaction...
         </p>
@@ -331,7 +442,6 @@ function showPaymentModal(totalFee) {
     document.body.appendChild(modalOverlay);
     paymentModal = modalOverlay;
 
-    // Start countdown
     paymentModalTimer = setInterval(() => {
         timeLeft -= 1000;
         const minutes = Math.floor(timeLeft / 60000);
@@ -346,14 +456,12 @@ function showPaymentModal(totalFee) {
             modalContent.querySelector('.loader').style.display = 'none';
             timerDisplay.style.color = '#FF6B6B';
             
-            // Auto-close after 5 seconds
             setTimeout(() => {
                 document.body.removeChild(modalOverlay);
             }, 5000);
         }
     }, 1000);
 
-    // Copy button functionality with notification
     modalContent.querySelector('.copy-btn').addEventListener('click', () => {
         navigator.clipboard.writeText(PAYMENT_ADDRESS).then(() => {
             showNotification('Address copied to clipboard!', 'success');
@@ -367,7 +475,6 @@ function showPaymentModal(totalFee) {
         });
     });
 
-    // Close modal when clicking outside
     modalOverlay.addEventListener('click', (e) => {
         if (e.target === modalOverlay) {
             clearInterval(paymentModalTimer);
@@ -377,7 +484,7 @@ function showPaymentModal(totalFee) {
 }
 
 // =============================================
-// LOGO UPLOAD (OPTIMIZED VERSION)
+// LOGO UPLOAD
 // =============================================
 function initLogoUpload() {
     const uploadArea = document.getElementById('logo-upload-area');
@@ -417,7 +524,6 @@ function initLogoUpload() {
         }
     });
     
-    // Drag & drop handling
     ['dragover', 'dragleave', 'drop'].forEach(event => {
         uploadArea.addEventListener(event, (e) => {
             e.preventDefault();
@@ -466,7 +572,7 @@ function initFAQ() {
 }
 
 // =============================================
-// NOTIFICATION SYSTEM (ENHANCED)
+// NOTIFICATION SYSTEM
 // =============================================
 function showNotification(message, type = 'info') {
     const notification = document.createElement('div');
@@ -548,6 +654,22 @@ appStyles.textContent = `
     to { opacity: 0; }
 }
 
+/* Counting animation styles */
+.counting-animation {
+    position: relative;
+}
+
+.counting-animation::after {
+    content: " and counting!";
+    opacity: 0;
+    animation: fadeIn 0.5s ease forwards 0.5s;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(5px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
 /* Improved logo upload area styles */
 #logo-upload-area {
     position: relative;
@@ -573,6 +695,116 @@ appStyles.textContent = `
 .copy-btn:hover {
     transform: scale(1.1);
     opacity: 0.9;
+}
+
+/* New styles for token counter and balance */
+.stats-container {
+    display: flex;
+    gap: 2rem;
+    justify-content: center;
+    margin-top: 1.5rem;
+    flex-wrap: wrap;
+}
+
+.token-counter, .sol-balance {
+    background: rgba(255, 215, 0, 0.1);
+    padding: 0.8rem 1.5rem;
+    border-radius: 50px;
+    font-weight: 500;
+    border: 1px solid rgba(255, 215, 0, 0.2);
+    font-size: 0.9rem;
+}
+
+.token-counter span, .sol-balance span {
+    color: var(--accent-yellow);
+    font-weight: 700;
+}
+
+/* Referral system styles */
+.referral-section {
+    max-width: 800px;
+    margin: 3rem auto;
+    padding: 0 1rem;
+}
+
+.referral-card {
+    background: linear-gradient(135deg, rgba(153, 69, 255, 0.1) 0%, rgba(20, 241, 149, 0.1) 100%);
+    border-radius: 12px;
+    padding: 2rem;
+    text-align: center;
+    border: 1px solid rgba(255, 215, 0, 0.2);
+}
+
+.referral-input {
+    display: flex;
+    margin: 1.5rem 0;
+}
+
+.referral-input input {
+    flex: 1;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid var(--accent-yellow);
+    color: white;
+    padding: 0.8rem;
+    border-radius: 8px 0 0 8px;
+    font-family: monospace;
+}
+
+.referral-input button {
+    background: var(--accent-yellow);
+    color: black;
+    border: none;
+    padding: 0 1.2rem;
+    border-radius: 0 8px 8px 0;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.referral-input button:hover {
+    background: var(--accent-yellow-dark);
+}
+
+.referral-stats {
+    display: flex;
+    justify-content: center;
+    gap: 2rem;
+    margin-top: 1rem;
+}
+
+.referral-stats div {
+    background: rgba(0, 0, 0, 0.2);
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    font-size: 0.9rem;
+}
+
+.referral-stats span {
+    color: var(--accent-yellow);
+    font-weight: 600;
+}
+
+/* Lazy loading */
+[loading="lazy"] {
+    transition: opacity 0.3s;
+    opacity: 0;
+}
+
+[loading="lazy"].loaded {
+    opacity: 1;
+}
+
+/* Responsiveness */
+@media (max-width: 768px) {
+    .stats-container {
+        flex-direction: column;
+        gap: 1rem;
+        align-items: center;
+    }
+    
+    .referral-stats {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
 }
 `;
 document.head.appendChild(appStyles);
